@@ -1,0 +1,39 @@
+server:
+  # run HTTP only — avoids self-signed TLS cert issues in a local lab
+  extraArgs:
+    - --insecure
+  service:
+    type: NodePort
+    nodePortHttp: {{ argocd_server_node_port }}
+
+configs:
+  params:
+    server.insecure: "true"
+
+# reduce resource footprint for a local lab cluster
+controller:
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+repoServer:
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 300m
+      memory: 256Mi
+
+applicationSet:
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 100m
+      memory: 128Mi

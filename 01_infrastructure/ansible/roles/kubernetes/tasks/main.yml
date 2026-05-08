@@ -1,0 +1,9 @@
+- include_tasks: prerequisites.yml
+- include_tasks: containerd.yml
+- include_tasks: kubeadm.yml
+- include_tasks: master.yml
+  when: inventory_hostname in groups['master']
+- include_tasks: workers.yml
+  when: inventory_hostname in groups['workers']
+- include_tasks: metrics-server.yml
+  when: inventory_hostname in groups['master']

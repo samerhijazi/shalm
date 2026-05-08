@@ -1,0 +1,91 @@
+# 1. Initialize cluster (idempotent)
+- name: Initialize Kubernetes cluster
+  command: >
+    kubeadm init --apiserver-advertise-address={{ ansible_host }}
+    --apiserver-cert-extra-sans={{ ansible_host }} --pod-network-cidr={{
+    pod_network_cidr }} --cri-socket={{ cri_socket }}
+  args:
+    creates: /etc/kubernetes/admin.conf
+
+# 2. Wait for API server
+- name: Wait for Kubernetes API server
+  uri:
+    url: https://{{ ansible_host }}:6443/healthz
+    validate_certs: false
+  register: api_health
+  retries: 30
+  delay: 5
+  until: api_health.status == 200
+
+# 3. Setup kubeconfig
+- name: Create .kube directory
+  file:
+    path: /home/ubuntu/.kube
+    state: directory
+    owner: ubuntu
+    group: ubuntu
+    mode: "0755"
+
+- name: Copy kubeconfig
+  copy:
+    src: /etc/kubernetes/admin.conf
+    dest: /home/ubuntu/.kube/config
+    remote_src: true
+    owner: ubuntu
+    group: ubuntu
+    mode: "0600" # tightened: kubeconfig contains credentials
+
+# 4. Generate and store join command
+- name: Generate join command
+  command: kubeadm token create --print-join-command
+  register: join_command
+  changed_when: true
+  run_once: true
+
+- name: Set join command fact
+  set_fact:
+    kube_join_cmd: "{{ join_command.stdout }}"
+  run_once: true
+
+# 5. Install Calico
+- name: Download Calico manifest
+  get_url:
+    url: https://raw.githubusercontent.com/projectcalico/calico/v3.28.0/manifests/calico.yaml
+    dest: /tmp/calico.yaml
+    mode: "0644"
+  run_once: true
+
+- name: Patch Calico pod CIDR to {{ pod_network_cidr }}
+  replace:
+    path: /tmp/calico.yaml
+    regexp: "192\\.168\\.0\\.0/16"
+    replace: "{{ pod_network_cidr }}"
+  run_once: true
+
+- name: Apply Calico manifest
+  command: kubectl apply -f /tmp/calico.yaml
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  register: calico_apply
+  changed_when: "'created' in calico_apply.stdout or 'configured' in calico_apply.stdout"
+  run_once: true
+
+- name: Wait for calico-node daemonset rollout
+  command: kubectl -n kube-system rollout status daemonset/calico-node --timeout=300s
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  register: calico_rollout
+  changed_when: false
+  run_once: true
+
+- name: Show Calico rollout result
+  debug:
+    var: calico_rollout.stdout
+  run_once: true
+
+# 6. Fetch kubeconfig to control node
+- name: Fetch kubeconfig to localhost
+  fetch:
+    src: /home/ubuntu/.kube/config
+    dest: ./kubeconfig
+    flat: true

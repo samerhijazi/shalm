@@ -1,0 +1,8 @@
+- name: Join cluster
+  command: "{{ hostvars['k8s-master'].kube_join_cmd }}"
+  register: join_result
+  retries: 5
+  delay: 15
+  until: join_result.rc == 0
+  args:
+    creates: /etc/kubernetes/kubelet.conf

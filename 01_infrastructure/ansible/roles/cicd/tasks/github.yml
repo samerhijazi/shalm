@@ -1,0 +1,34 @@
+# Registers a GitHub repo with ArgoCD via a labeled Kubernetes Secret.
+# ArgoCD watches for secrets with label argocd.argoproj.io/secret-type: repository.
+
+- name: Copy GitHub repo secret template
+  template:
+    src: argocd-repo-secret.yml.j2
+    dest: /tmp/argocd-repo-secret.yml
+    mode: "0600"
+
+- name: Register GitHub repository in ArgoCD
+  command: kubectl apply -f /tmp/argocd-repo-secret.yml
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  register: repo_result
+  changed_when: "'created' in repo_result.stdout or 'configured' in repo_result.stdout"
+
+- name: Remove repo secret file from disk
+  file:
+    path: /tmp/argocd-repo-secret.yml
+    state: absent
+
+- name: Verify repository connection
+  command: >
+    kubectl get secret repo-{{ github_repo_name }}
+    -n {{ argocd_namespace }}
+    -o jsonpath="{.metadata.name}"
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  register: repo_check
+  changed_when: false
+
+- name: Print GitHub repo status
+  debug:
+    msg: "GitHub repo '{{ github_repo_url }}' registered in ArgoCD as secret 'repo-{{ github_repo_name }}'"

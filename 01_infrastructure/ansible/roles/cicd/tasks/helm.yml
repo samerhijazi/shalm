@@ -1,0 +1,19 @@
+- name: Check if Helm is installed
+  command: helm version --short
+  register: helm_check
+  changed_when: false
+  failed_when: false
+
+- name: Download Helm installer
+  get_url:
+    url: "https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3"
+    dest: /tmp/get-helm.sh
+    mode: "0755"
+  when: helm_check.rc != 0
+
+- name: Install Helm {{ helm_version }}
+  command: /tmp/get-helm.sh --version {{ helm_version }}
+  environment:
+    HELM_INSTALL_DIR: "{{ helm_install_dir }}"
+    USE_SUDO: "true"
+  when: helm_check.rc != 0

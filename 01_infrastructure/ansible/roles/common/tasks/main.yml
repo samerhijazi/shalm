@@ -1,0 +1,30 @@
+- name: Update apt cache (with retries)
+  apt:
+    update_cache: yes
+  register: apt_result
+  retries: 5
+  delay: 5
+  until: apt_result is succeeded
+
+- name: Upgrade system packages
+  apt:
+    upgrade: dist
+
+- name: Disable swap
+  command: swapoff -a
+
+- name: Remove swap from fstab
+  replace:
+    path: /etc/fstab
+    regexp: '^([^#].*swap.*)$'
+    replace: '# \1'
+
+- name: Set hostname
+  hostname:
+    name: "{{ inventory_hostname }}"
+
+- name: Ensure br_netfilter module loads
+  copy:
+    dest: /etc/modules-load.d/k8s.conf
+    content: |
+      br_netfilter

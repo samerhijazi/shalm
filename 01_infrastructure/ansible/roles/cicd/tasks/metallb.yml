@@ -1,0 +1,38 @@
+- name: Apply MetalLB manifest
+  command: kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.14.9/config/manifests/metallb-native.yaml
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  register: metallb_apply
+  changed_when: "'created' in metallb_apply.stdout or 'configured' in metallb_apply.stdout"
+
+- name: Wait for MetalLB controller to be ready
+  command: >
+    kubectl rollout status deployment/controller
+    -n metallb-system
+    --timeout=120s
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  changed_when: false
+
+- name: Apply MetalLB IP pool
+  command: kubectl apply -f -
+  args:
+    stdin: |
+      apiVersion: metallb.io/v1beta1
+      kind: IPAddressPool
+      metadata:
+        name: default-pool
+        namespace: metallb-system
+      spec:
+        addresses:
+          - {{ metallb_ip_pool }}
+      ---
+      apiVersion: metallb.io/v1beta1
+      kind: L2Advertisement
+      metadata:
+        name: default
+        namespace: metallb-system
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  register: pool_apply
+  changed_when: "'created' in pool_apply.stdout or 'configured' in pool_apply.stdout"

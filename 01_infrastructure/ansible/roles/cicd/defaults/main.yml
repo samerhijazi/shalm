@@ -1,0 +1,17 @@
+helm_version: "v3.15.3"
+helm_install_dir: /usr/local/bin
+
+argocd_namespace: argocd
+argocd_release: argocd
+argocd_chart: argo/argo-cd
+argocd_version: "" # empty = latest
+
+argocd_server_node_port: 30080
+
+# GitHub repository (leave github_repo_url empty to skip repo registration)
+github_repo_url: "https://github.com/samerhijazi/shalm"
+github_repo_name: "shalm" # used to name the ArgoCD repo secret
+github_token: "" # personal access token — leave empty for public repos
+
+# MetalLB — IP pool reserved for LoadBalancer services (must not overlap with VM IPs)
+metallb_ip_pool: "192.168.105.100-192.168.105.199"

@@ -1,0 +1,21 @@
+- name: Base configuration for all nodes
+  hosts: k8s
+  become: yes
+  tags: common
+  roles:
+    - common
+
+- name: Kubernetes setup
+  hosts: k8s
+  become: yes
+  tags: kubernetes
+  roles:
+    - kubernetes
+
+# --- CI/CD + cluster infra (MetalLB, Helm, ArgoCD) ---
+- name: Setup CI/CD with ArgoCD
+  hosts: master
+  become: yes
+  tags: cicd
+  roles:
+    - cicd

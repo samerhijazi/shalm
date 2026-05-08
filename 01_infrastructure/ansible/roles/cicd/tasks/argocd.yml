@@ -1,0 +1,74 @@
+- name: Add Argo Helm repo
+  command: helm repo add argo https://argoproj.github.io/argo-helm
+  register: repo_add
+  changed_when: "'has been added' in repo_add.stdout"
+  failed_when: repo_add.rc != 0 and 'already exists' not in repo_add.stderr
+
+- name: Update Helm repos
+  command: helm repo update
+  changed_when: false
+
+- name: Create argocd namespace
+  command: kubectl apply -f -
+  args:
+    stdin: |
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: {{ argocd_namespace }}
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  register: ns_result
+  changed_when: "'created' in ns_result.stdout"
+
+- name: Copy ArgoCD Helm values
+  template:
+    src: argocd-values.yml.j2
+    dest: /tmp/argocd-values.yml
+    mode: "0644"
+
+- name: Deploy ArgoCD
+  command: >
+    helm upgrade --install {{ argocd_release }}
+    {{ argocd_chart }}
+    --namespace {{ argocd_namespace }}
+    --values /tmp/argocd-values.yml
+    {% if argocd_version != "" %}--version {{ argocd_version }}{% endif %}
+    --timeout 10m0s
+    --wait
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  register: helm_result
+  changed_when: "'has been upgraded' in helm_result.stdout or 'has been deployed' in helm_result.stdout"
+
+- name: Wait for ArgoCD server to be ready
+  command: >
+    kubectl rollout status deployment/argocd-server
+    -n {{ argocd_namespace }}
+    --timeout=300s
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  changed_when: false
+
+- name: Fetch initial admin password
+  command: >
+    kubectl get secret argocd-initial-admin-secret
+    -n {{ argocd_namespace }}
+    -o jsonpath="{.data.password}"
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  register: argocd_password_b64
+  changed_when: false
+  failed_when: false  # secret is deleted after first login
+
+- name: Decode admin password
+  set_fact:
+    argocd_admin_password: "{{ argocd_password_b64.stdout | b64decode }}"
+  when: argocd_password_b64.rc == 0 and argocd_password_b64.stdout != ""
+
+- name: Print ArgoCD access info
+  debug:
+    msg: >
+      ArgoCD UI: http://{{ ansible_host }}:{{ argocd_server_node_port }}
+      Username: admin
+      Password: {{ argocd_admin_password | default('(already changed — check argocd-initial-admin-secret)') }}

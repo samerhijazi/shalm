@@ -1,0 +1,158 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboard-request-latency
+  namespace: observability
+  labels:
+    grafana_dashboard: "1"
+data:
+  request-latency.json: |
+    {
+      "uid": "shalm-request-latency",
+      "title": "Application Request Latency",
+      "tags": ["app", "latency", "shalm"],
+      "timezone": "browser",
+      "schemaVersion": 38,
+      "version": 1,
+      "refresh": "30s",
+      "time": { "from": "now-1h", "to": "now" },
+      "templating": {
+        "list": [
+          {
+            "name": "datasource",
+            "type": "datasource",
+            "query": "prometheus",
+            "current": {},
+            "label": "Datasource"
+          },
+          {
+            "name": "namespace",
+            "type": "query",
+            "datasource": { "type": "prometheus", "uid": "${datasource}" },
+            "query": "label_values(http_server_requests_seconds_count, namespace)",
+            "refresh": 2,
+            "multi": true,
+            "includeAll": true,
+            "current": {},
+            "label": "Namespace"
+          }
+        ]
+      },
+      "panels": [
+        {
+          "id": 1,
+          "type": "timeseries",
+          "title": "HTTP Request Rate (req/s)",
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "targets": [
+            {
+              "expr": "sum by(service, namespace) (rate(http_server_requests_seconds_count{namespace=~'$namespace'}[1m]))",
+              "legendFormat": "{{namespace}}/{{service}}",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": { "unit": "reqps" }
+          }
+        },
+        {
+          "id": 2,
+          "type": "timeseries",
+          "title": "HTTP Error Rate (%)",
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "targets": [
+            {
+              "expr": "100 * sum by(service, namespace) (rate(http_server_requests_seconds_count{status=~'5..', namespace=~'$namespace'}[1m])) / sum by(service, namespace) (rate(http_server_requests_seconds_count{namespace=~'$namespace'}[1m]))",
+              "legendFormat": "{{namespace}}/{{service}}",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percent",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "green", "value": null },
+                  { "color": "yellow", "value": 0.5 },
+                  { "color": "red", "value": 1 }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "id": 3,
+          "type": "timeseries",
+          "title": "Latency P50 (ms)",
+          "gridPos": { "h": 8, "w": 8, "x": 0, "y": 8 },
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "targets": [
+            {
+              "expr": "histogram_quantile(0.50, sum by(le, service, namespace) (rate(http_server_requests_seconds_bucket{namespace=~'$namespace'}[1m]))) * 1000",
+              "legendFormat": "p50 {{namespace}}/{{service}}",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": { "unit": "ms" }
+          }
+        },
+        {
+          "id": 4,
+          "type": "timeseries",
+          "title": "Latency P95 (ms)",
+          "gridPos": { "h": 8, "w": 8, "x": 8, "y": 8 },
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "targets": [
+            {
+              "expr": "histogram_quantile(0.95, sum by(le, service, namespace) (rate(http_server_requests_seconds_bucket{namespace=~'$namespace'}[1m]))) * 1000",
+              "legendFormat": "p95 {{namespace}}/{{service}}",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "ms",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "green", "value": null },
+                  { "color": "yellow", "value": 150 },
+                  { "color": "red", "value": 200 }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "id": 5,
+          "type": "timeseries",
+          "title": "Latency P99 (ms)",
+          "gridPos": { "h": 8, "w": 8, "x": 16, "y": 8 },
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "targets": [
+            {
+              "expr": "histogram_quantile(0.99, sum by(le, service, namespace) (rate(http_server_requests_seconds_bucket{namespace=~'$namespace'}[1m]))) * 1000",
+              "legendFormat": "p99 {{namespace}}/{{service}}",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "ms",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "green", "value": null },
+                  { "color": "yellow", "value": 150 },
+                  { "color": "red", "value": 200 }
+                ]
+              }
+            }
+          }
+        }
+      ]
+    }

@@ -1,0 +1,29 @@
+- name: Download Metrics Server manifest
+  get_url:
+    url: https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+    dest: /tmp/metrics-server.yaml
+    mode: "0644"
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+
+- name: Patch Metrics Server to allow insecure kubelet TLS
+  replace:
+    path: /tmp/metrics-server.yaml
+    regexp: '(\s+- --metric-resolution=15s)'
+    replace: '\1\n        - --kubelet-insecure-tls'
+
+- name: Apply Metrics Server manifest
+  command: kubectl apply -f /tmp/metrics-server.yaml
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  register: ms_apply
+  changed_when: "'created' in ms_apply.stdout or 'configured' in ms_apply.stdout"
+
+- name: Wait for Metrics Server to be ready
+  command: >
+    kubectl rollout status deployment/metrics-server
+    -n kube-system
+    --timeout=120s
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  changed_when: false
