@@ -27,3 +27,21 @@ updates:
       day: monday
     commit-message:
       prefix: "chore(docker)"
+
+  # Maven — quarkus-ui
+  - package-ecosystem: maven
+    directory: /03_apps/quarkus-ui
+    schedule:
+      interval: weekly
+      day: monday
+    commit-message:
+      prefix: "chore(maven)"
+
+  # Docker — quarkus-ui
+  - package-ecosystem: docker
+    directory: /03_apps/quarkus-ui
+    schedule:
+      interval: weekly
+      day: monday
+    commit-message:
+      prefix: "chore(docker)"

@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shalm Platform</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: system-ui, sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; }
+
+        header {
+            background: #1e293b;
+            padding: 1rem 2rem;
+            border-bottom: 1px solid #334155;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        header h1 { font-size: 1.3rem; font-weight: 700; color: #38bdf8; }
+        header span { font-size: 0.8rem; color: #64748b; }
+
+        main { max-width: 960px; margin: 0 auto; padding: 2rem 1.5rem; }
+
+        .section-title {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #64748b;
+            margin-bottom: 0.75rem;
+        }
+
+        /* ── Balances ── */
+        .balances {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        .balance-card {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 10px;
+            padding: 1.25rem 1.5rem;
+        }
+        .balance-card .org { font-size: 0.8rem; color: #64748b; margin-bottom: 0.4rem; }
+        .balance-card .amount { font-size: 2.2rem; font-weight: 700; color: #38bdf8; line-height: 1; }
+        .balance-card .unit { font-size: 0.75rem; color: #475569; margin-top: 0.3rem; }
+
+        /* ── Alerts ── */
+        .alert {
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            margin-bottom: 1.25rem;
+            font-size: 0.875rem;
+        }
+        .alert-success { background: #052e16; border: 1px solid #166534; color: #4ade80; }
+        .alert-error   { background: #2d0a0a; border: 1px solid #991b1b; color: #f87171; }
+
+        /* ── Card ── */
+        .card {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .card h2 {
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #64748b;
+            margin-bottom: 1.25rem;
+        }
+
+        /* ── Transfer form ── */
+        .form-row { display: flex; gap: 1rem; align-items: flex-end; flex-wrap: wrap; }
+        .form-group { display: flex; flex-direction: column; gap: 0.35rem; flex: 1; min-width: 110px; }
+        .form-group label { font-size: 0.75rem; color: #64748b; }
+        select, input[type=number] {
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 6px;
+            color: #e2e8f0;
+            padding: 0.5rem 0.75rem;
+            font-size: 0.875rem;
+            width: 100%;
+        }
+        select:focus, input:focus { outline: none; border-color: #38bdf8; }
+        button[type=submit] {
+            background: #0284c7;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            padding: 0.55rem 1.75rem;
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        button[type=submit]:hover { background: #0369a1; }
+
+        /* ── Table ── */
+        .table-wrap { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.83rem; }
+        thead th {
+            text-align: left;
+            color: #64748b;
+            font-weight: 500;
+            padding: 0.5rem 0.75rem;
+            border-bottom: 1px solid #334155;
+        }
+        tbody td { padding: 0.65rem 0.75rem; border-bottom: 1px solid #1e3a5f22; }
+        tbody tr:last-child td { border-bottom: none; }
+
+        .badge {
+            display: inline-block;
+            padding: 0.15rem 0.55rem;
+            border-radius: 4px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+        .badge-success { background: #052e16; color: #4ade80; }
+        .badge-failed  { background: #2d0a0a; color: #f87171; }
+        .badge-invalid { background: #1c1917; color: #a8a29e; }
+
+        .tx-id { font-family: monospace; font-size: 0.75rem; color: #64748b; }
+        .empty  { color: #475569; font-size: 0.85rem; padding: 0.5rem 0; }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Shalm</h1>
+    <span>Blockchain Banking Platform</span>
+</header>
+
+<main>
+
+    {#if message}
+    <div class="alert alert-success">{message}</div>
+    {/if}
+    {#if error}
+    <div class="alert alert-error">{error}</div>
+    {/if}
+
+    <!-- Balances -->
+    <p class="section-title">Account Balances</p>
+    <div class="balances">
+        {#for entry in balances.entrySet()}
+        <div class="balance-card">
+            <div class="org">{entry.key}</div>
+            <div class="amount">{entry.value}</div>
+            <div class="unit">tokens</div>
+        </div>
+        {/for}
+    </div>
+
+    <!-- Transfer -->
+    <div class="card">
+        <h2>Transfer</h2>
+        <form method="POST" action="/transfer">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="from">From</label>
+                    <select id="from" name="from">
+                        {#for acc in accounts}
+                        <option value="{acc}">{acc}</option>
+                        {/for}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="to">To</label>
+                    <select id="to" name="to">
+                        {#for acc in accounts}
+                        <option value="{acc}">{acc}</option>
+                        {/for}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="amount">Amount</label>
+                    <input id="amount" type="number" name="amount" min="1" value="10">
+                </div>
+                <button type="submit">Send</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Transaction History -->
+    <div class="card">
+        <h2>Transaction History</h2>
+        {#if transactions.isEmpty()}
+        <p class="empty">No transactions yet. Submit a transfer above.</p>
+        {#else}
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>TX ID</th>
+                        <th>From</th>
+                        <th>To</th>
+                        <th>Amount</th>
+                        <th>Status</th>
+                        <th>Time</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {#for tx in transactions}
+                    <tr>
+                        <td class="tx-id">{tx.txId.substring(0,8)}…</td>
+                        <td>{tx.from}</td>
+                        <td>{tx.to}</td>
+                        <td>{tx.amount}</td>
+                        <td><span class="badge badge-{tx.status}">{tx.status}</span></td>
+                        <td>{tx.timestamp}</td>
+                    </tr>
+                    {/for}
+                </tbody>
+            </table>
+        </div>
+        {/if}
+    </div>
+
+</main>
+</body>
+</html>

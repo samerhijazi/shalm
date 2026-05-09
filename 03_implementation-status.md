@@ -70,7 +70,7 @@ shalm-platform/
 | 0   | Repo Bootstrap + ArgoCD root app | `[x] done`    | Folder structure, root ArgoCD App-of-Apps                         |
 | 1   | Observability Stack              | `[x] done`    | Prometheus, Grafana, Loki+Promtail, dashboards                    |
 | 2   | Quarkus API                      | `[x] done`    | REST API, in-memory state, metrics, structured logs, GHCR, GitOps |
-| 3   | Quarkus UI                       | `[ ] pending` | Qute templates, balance/tx views, wired to API, GitOps            |
+| 3   | Quarkus UI                       | `[x] done`    | Qute templates, balance/tx views, wired to API, GitOps            |
 | 4   | Hyperledger Fabric               | `[ ] pending` | 2 orgs, 1 orderer, peers, Go chaincode, API integration           |
 | 5   | Istio                            | `[ ] pending` | Sidecar injection, ingress gateway, Fabric traffic routing        |
 | 6   | Hyperledger Besu                 | `[ ] pending` | 3-node QBFT, Solidity contract, observability                     |
