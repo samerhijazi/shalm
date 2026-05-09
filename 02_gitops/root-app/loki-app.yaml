@@ -7,16 +7,10 @@ metadata:
     - resources-finalizer.argocd.io
 spec:
   project: default
-  sources:
-    - repoURL: https://grafana.github.io/helm-charts
-      chart: loki
-      targetRevision: "6.6.2"
-      helm:
-        valueFiles:
-          - $values/02_gitops/observability/loki-values.yaml
-    - repoURL: https://github.com/samerhijazi/shalm
-      targetRevision: HEAD
-      ref: values
+  source:
+    repoURL: https://github.com/samerhijazi/shalm
+    targetRevision: HEAD
+    path: 02_gitops/observability/loki-manifests
   destination:
     server: https://kubernetes.default.svc
     namespace: observability
