@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: quarkus-api
+  namespace: quarkus-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: quarkus-api
+  template:
+    metadata:
+      labels:
+        app: quarkus-api
+    spec:
+      containers:
+        - name: quarkus-api
+          image: ghcr.io/samerhijazi/quarkus-api:latest
+          ports:
+            - containerPort: 8080
+          env:
+            - name: QUARKUS_LOG_CONSOLE_JSON
+              value: "true"
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi

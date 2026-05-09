@@ -1,0 +1,20 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: quarkus-api
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/samerhijazi/shalm
+    targetRevision: HEAD
+    path: 02_gitops/quarkus-app
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: quarkus-api
+  syncPolicy:
+    automated:
+      selfHeal: true
+      prune: true

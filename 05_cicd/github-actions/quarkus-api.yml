@@ -1,0 +1,61 @@
+name: quarkus-api CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "03_apps/quarkus-api/**"
+
+env:
+  IMAGE: ghcr.io/samerhijazi/quarkus-api
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: "21"
+          distribution: temurin
+          cache: maven
+
+      - name: Build with Maven
+        run: mvn package -DskipTests -q
+        working-directory: 03_apps/quarkus-api
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: 03_apps/quarkus-api
+          push: true
+          tags: |
+            ${{ env.IMAGE }}:${{ github.sha }}
+            ${{ env.IMAGE }}:latest
+
+      - name: Patch deployment manifest
+        run: |
+          sed -i "s|image: ${{ env.IMAGE }}:.*|image: ${{ env.IMAGE }}:${{ github.sha }}|" \
+            02_gitops/quarkus-app/deployment.yaml
+
+      - name: Commit and push manifest update
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add 02_gitops/quarkus-app/deployment.yaml
+          git commit -m "ci: update quarkus-api image to ${{ github.sha }}"
+          git push
