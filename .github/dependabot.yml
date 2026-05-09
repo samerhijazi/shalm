@@ -1,0 +1,29 @@
+version: 2
+
+updates:
+  # GitHub Actions — bumps `uses:` versions in all workflow files
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    commit-message:
+      prefix: "chore(actions)"
+
+  # Maven — bumps dependencies and plugins in pom.xml
+  - package-ecosystem: maven
+    directory: /03_apps/quarkus-api
+    schedule:
+      interval: weekly
+      day: monday
+    commit-message:
+      prefix: "chore(maven)"
+
+  # Docker — bumps FROM lines in Dockerfiles
+  - package-ecosystem: docker
+    directory: /03_apps/quarkus-api
+    schedule:
+      interval: weekly
+      day: monday
+    commit-message:
+      prefix: "chore(docker)"

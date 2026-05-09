@@ -6,6 +6,7 @@ on:
     paths:
       - "03_apps/quarkus-api/**"
       - ".github/workflows/quarkus-api.yml"
+      - "versions.env"
   workflow_dispatch:
 
 env:
@@ -23,10 +24,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4.2.2
 
-      - name: Set up Java 21
+      - name: Load versions
+        run: grep -v '^#' versions.env | grep -v '^$' >> $GITHUB_ENV
+
+      - name: Set up Java
         uses: actions/setup-java@v4.7.0
         with:
-          java-version: "21"
+          java-version: ${{ env.JAVA_VERSION }}
           distribution: temurin
           cache: maven
 
@@ -35,14 +39,14 @@ jobs:
         working-directory: 03_apps/quarkus-api
 
       - name: Log in to GHCR
-        uses: docker/login-action@v3
+        uses: docker/login-action@v3.4.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push Docker image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v5.4.0
         with:
           context: 03_apps/quarkus-api
           push: true

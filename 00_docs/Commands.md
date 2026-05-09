@@ -3,23 +3,41 @@
 > Master node: `192.168.105.3` | Workers: `192.168.105.4`, `192.168.105.5`
 > GitHub: `https://github.com/samerhijazi/shalm`
 > Registry: `ghcr.io/samerhijazi`
+> Versions: `versions.env` (repo root) — single source of truth for all tool versions
+
+---
+
+## Version Management
+
+All tool versions are centralized in **`versions.env`** at the repo root.
+
+| What | File | Updated by |
+|---|---|---|
+| Java, Quarkus, Maven plugins | `versions.env` | Dependabot (weekly) |
+| Docker base images | `versions.env` + `Dockerfile` | Dependabot (weekly) |
+| GitHub Actions | workflow `uses:` fields | Dependabot (weekly) |
+| Helm chart versions | `versions.env` + ArgoCD YAML | Manual (check release notes) |
+
+To update a version manually: edit `versions.env`, commit, push. The workflow reloads it on every run.
+
+Dependabot PRs appear at: `https://github.com/samerhijazi/shalm/pulls`
 
 ---
 
 ## Platform URLs
 
-| Service        | URL                              | User    | Password            |
-| -------------- | -------------------------------- | ------- | ------------------- |
-| ArgoCD         | http://192.168.105.3:30080       | admin   | `GhPtA0-v7iFqnPkX` |
-| Grafana        | http://192.168.105.3:30300       | admin   | `shalm-admin`       |
-| Prometheus     | http://192.168.105.3:30090       | —       | —                   |
-| AlertManager   | http://192.168.105.3:30093       | —       | —                   |
-| Quarkus API    | http://192.168.105.3:30800       | —       | —                   |
-| Quarkus UI     | http://192.168.105.3:30801       | —       | — (Phase 3)         |
+| Service      | URL                        | User  | Password           |
+| ------------ | -------------------------- | ----- | ------------------ |
+| ArgoCD       | http://192.168.105.3:30080 | admin | `GhPtA0-v7iFqnPkX` |
+| Grafana      | http://192.168.105.3:30300 | admin | `shalm-admin`      |
+| Prometheus   | http://192.168.105.3:30090 | —     | —                  |
+| AlertManager | http://192.168.105.3:30093 | —     | —                  |
+| Quarkus API  | http://192.168.105.3:30800 | —     | —                  |
+| Quarkus UI   | http://192.168.105.3:30801 | —     | — (Phase 3)        |
 
 ### Quarkus API Endpoints (Phase 2+)
 
-```
+```curl
 POST http://192.168.105.3:30800/transfer
 GET  http://192.168.105.3:30800/balance/{id}   # id = org1 | org2 | org3
 GET  http://192.168.105.3:30800/health/ready

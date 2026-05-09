@@ -63,7 +63,7 @@ public class TransferResource {
             } else {
                 errorCount.increment();
                 logTransfer(txId, req.from, req.to, req.amount, "failed");
-                return Response.status(Response.Status.UNPROCESSABLE_ENTITY)
+                return Response.status(422)
                         .entity(new TransferResponse(txId, "failed", "Insufficient funds or unknown account"))
                         .build();
             }
