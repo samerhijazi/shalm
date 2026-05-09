@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: quarkus-api
-          image: ghcr.io/samerhijazi/quarkus-api:e76d61503d56454e417ba296ce88995f853535b7
+          image: ghcr.io/samerhijazi/quarkus-api:1f53cccf8c343761efd8f305c65475e5d1f53c5c
           ports:
             - containerPort: 8080
           env:
