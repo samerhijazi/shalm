@@ -35,6 +35,12 @@ backend:
 gateway:
   enabled: false
 
+# Disable memcached caches — no StorageClass available on this cluster
+chunksCache:
+  enabled: false
+resultsCache:
+  enabled: false
+
 # Disable monitoring of Loki itself to avoid circular dependency
 monitoring:
   selfMonitoring:
