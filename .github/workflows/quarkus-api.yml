@@ -52,7 +52,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push Docker image (amd64 + arm64)
-        uses: docker/build-push-action@v5.4.0
+        uses: docker/build-push-action@v7.1.0
         with:
           context: 03_apps/quarkus-api
           platforms: linux/amd64,linux/arm64
