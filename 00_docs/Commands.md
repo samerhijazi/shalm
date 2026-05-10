@@ -9,14 +9,14 @@
 
 ## Version Management
 
-All tool versions are centralized in **`versions.env`** at the repo root.
+All tool versions are centralized in **`versions.env`** at the repo root..
 
-| What | File | Updated by |
-|---|---|---|
-| Java, Quarkus, Maven plugins | `versions.env` | Dependabot (weekly) |
-| Docker base images | `versions.env` + `Dockerfile` | Dependabot (weekly) |
-| GitHub Actions | workflow `uses:` fields | Dependabot (weekly) |
-| Helm chart versions | `versions.env` + ArgoCD YAML | Manual (check release notes) |
+| What                         | File                          | Updated by                   |
+| ---------------------------- | ----------------------------- | ---------------------------- |
+| Java, Quarkus, Maven plugins | `versions.env`                | Dependabot (weekly)          |
+| Docker base images           | `versions.env` + `Dockerfile` | Dependabot (weekly)          |
+| GitHub Actions               | workflow `uses:` fields       | Dependabot (weekly)          |
+| Helm chart versions          | `versions.env` + ArgoCD YAML  | Manual (check release notes) |
 
 To update a version manually: edit `versions.env`, commit, push. The workflow reloads it on every run.
 

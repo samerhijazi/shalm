@@ -1,34 +1,47 @@
 package io.shalm;
 
+import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
+import java.util.Collection;
+import java.util.Comparator;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 @ApplicationScoped
 public class AccountService {
 
-    private final Map<String, Integer> balances = new ConcurrentHashMap<>(Map.of(
-            "org1", 1000,
-            "org2", 1000,
-            "org3", 1000
-    ));
+    private final Map<String, Account> accounts = new ConcurrentHashMap<>();
 
-    public Integer getBalance(String id) {
-        return balances.get(id);
+    @PostConstruct
+    void init() {
+        seed("ACC-B1-001", "ClientA", "Bank1", 1000);
+        seed("ACC-B1-002", "ClientC", "Bank1",  500);
+        seed("ACC-B2-001", "ClientB", "Bank2", 1000);
+        seed("ACC-B2-002", "ClientD", "Bank2",  500);
     }
 
-    public Set<String> getAccounts() {
-        return balances.keySet();
+    private void seed(String id, String owner, String bank, int balance) {
+        accounts.put(id, new Account(id, owner, bank, balance));
     }
 
-    public synchronized boolean transfer(String from, String to, int amount) {
-        Integer fromBal = balances.get(from);
-        Integer toBal = balances.get(to);
-        if (fromBal == null || toBal == null) return false;
-        if (fromBal < amount) return false;
-        balances.put(from, fromBal - amount);
-        balances.put(to, toBal + amount);
+    public Account getAccount(String id) {
+        return accounts.get(id);
+    }
+
+    public Collection<Account> getAllAccounts() {
+        return accounts.values().stream()
+                .sorted(Comparator.comparing(a -> a.id))
+                .collect(Collectors.toList());
+    }
+
+    public synchronized boolean transfer(String fromId, String toId, int amount) {
+        Account from = accounts.get(fromId);
+        Account to   = accounts.get(toId);
+        if (from == null || to == null) return false;
+        if (from.balance < amount) return false;
+        from.balance -= amount;
+        to.balance   += amount;
         return true;
     }
 }

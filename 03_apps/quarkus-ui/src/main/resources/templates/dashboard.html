@@ -19,122 +19,113 @@
         header h1 { font-size: 1.3rem; font-weight: 700; color: #38bdf8; }
         header span { font-size: 0.8rem; color: #64748b; }
 
-        main { max-width: 960px; margin: 0 auto; padding: 2rem 1.5rem; }
+        main { max-width: 1000px; margin: 0 auto; padding: 2rem 1.5rem; }
 
-        .section-title {
-            font-size: 0.75rem;
-            font-weight: 600;
+        .section-label {
+            font-size: 0.72rem;
+            font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: 0.08em;
+            letter-spacing: 0.1em;
             color: #64748b;
-            margin-bottom: 0.75rem;
+            margin-bottom: 0.6rem;
         }
 
-        /* ── Balances ── */
-        .balances {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 1rem;
-            margin-bottom: 2rem;
-        }
-        .balance-card {
+        /* ── Bank sections ── */
+        .banks { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-bottom: 2rem; }
+        .bank-section {
             background: #1e293b;
             border: 1px solid #334155;
             border-radius: 10px;
-            padding: 1.25rem 1.5rem;
+            overflow: hidden;
         }
-        .balance-card .org { font-size: 0.8rem; color: #64748b; margin-bottom: 0.4rem; }
-        .balance-card .amount { font-size: 2.2rem; font-weight: 700; color: #38bdf8; line-height: 1; }
-        .balance-card .unit { font-size: 0.75rem; color: #475569; margin-top: 0.3rem; }
+        .bank-header {
+            background: #0f172a;
+            border-bottom: 1px solid #334155;
+            padding: 0.7rem 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .bank-header .bank-name { font-size: 0.95rem; font-weight: 700; color: #38bdf8; }
+        .bank-header .org-tag {
+            font-size: 0.68rem;
+            background: #1e3a5f;
+            color: #7dd3fc;
+            padding: 0.15rem 0.5rem;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+        .account-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.75rem 1.25rem;
+            border-bottom: 1px solid #1e293b;
+        }
+        .account-row:last-child { border-bottom: none; }
+        .account-info .client { font-size: 0.9rem; font-weight: 600; }
+        .account-info .acc-id { font-size: 0.72rem; font-family: monospace; color: #64748b; }
+        .account-balance { text-align: right; }
+        .account-balance .amount { font-size: 1.4rem; font-weight: 700; color: #38bdf8; }
+        .account-balance .unit { font-size: 0.7rem; color: #475569; }
 
         /* ── Alerts ── */
-        .alert {
-            padding: 0.75rem 1rem;
-            border-radius: 8px;
-            margin-bottom: 1.25rem;
-            font-size: 0.875rem;
-        }
+        .alert { padding: 0.75rem 1rem; border-radius: 8px; margin-bottom: 1.25rem; font-size: 0.875rem; }
         .alert-success { background: #052e16; border: 1px solid #166534; color: #4ade80; }
         .alert-error   { background: #2d0a0a; border: 1px solid #991b1b; color: #f87171; }
 
         /* ── Card ── */
-        .card {
-            background: #1e293b;
-            border: 1px solid #334155;
-            border-radius: 10px;
-            padding: 1.5rem;
-            margin-bottom: 1.5rem;
-        }
+        .card { background: #1e293b; border: 1px solid #334155; border-radius: 10px; padding: 1.5rem; margin-bottom: 1.5rem; }
         .card h2 {
-            font-size: 0.8rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            color: #64748b;
-            margin-bottom: 1.25rem;
+            font-size: 0.75rem; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 0.1em;
+            color: #64748b; margin-bottom: 1.25rem;
         }
 
         /* ── Transfer form ── */
         .form-row { display: flex; gap: 1rem; align-items: flex-end; flex-wrap: wrap; }
-        .form-group { display: flex; flex-direction: column; gap: 0.35rem; flex: 1; min-width: 110px; }
+        .form-group { display: flex; flex-direction: column; gap: 0.35rem; flex: 1; min-width: 140px; }
         .form-group label { font-size: 0.75rem; color: #64748b; }
         select, input[type=number] {
-            background: #0f172a;
-            border: 1px solid #334155;
-            border-radius: 6px;
-            color: #e2e8f0;
-            padding: 0.5rem 0.75rem;
-            font-size: 0.875rem;
-            width: 100%;
+            background: #0f172a; border: 1px solid #334155; border-radius: 6px;
+            color: #e2e8f0; padding: 0.5rem 0.75rem; font-size: 0.875rem; width: 100%;
         }
         select:focus, input:focus { outline: none; border-color: #38bdf8; }
         button[type=submit] {
-            background: #0284c7;
-            color: #fff;
-            border: none;
-            border-radius: 6px;
-            padding: 0.55rem 1.75rem;
-            font-size: 0.875rem;
-            font-weight: 600;
-            cursor: pointer;
-            white-space: nowrap;
+            background: #0284c7; color: #fff; border: none; border-radius: 6px;
+            padding: 0.55rem 1.75rem; font-size: 0.875rem; font-weight: 600;
+            cursor: pointer; white-space: nowrap;
         }
         button[type=submit]:hover { background: #0369a1; }
 
         /* ── Table ── */
         .table-wrap { overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; font-size: 0.83rem; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
         thead th {
-            text-align: left;
-            color: #64748b;
-            font-weight: 500;
-            padding: 0.5rem 0.75rem;
-            border-bottom: 1px solid #334155;
+            text-align: left; color: #64748b; font-weight: 500;
+            padding: 0.5rem 0.75rem; border-bottom: 1px solid #334155;
         }
-        tbody td { padding: 0.65rem 0.75rem; border-bottom: 1px solid #1e3a5f22; }
+        tbody td { padding: 0.65rem 0.75rem; border-bottom: 1px solid #1e293b33; }
         tbody tr:last-child td { border-bottom: none; }
 
         .badge {
-            display: inline-block;
-            padding: 0.15rem 0.55rem;
-            border-radius: 4px;
-            font-size: 0.72rem;
-            font-weight: 700;
-            text-transform: uppercase;
+            display: inline-block; padding: 0.15rem 0.55rem;
+            border-radius: 4px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
         }
         .badge-success { background: #052e16; color: #4ade80; }
         .badge-failed  { background: #2d0a0a; color: #f87171; }
         .badge-invalid { background: #1c1917; color: #a8a29e; }
 
-        .tx-id { font-family: monospace; font-size: 0.75rem; color: #64748b; }
-        .empty  { color: #475569; font-size: 0.85rem; padding: 0.5rem 0; }
+        .tx-id { font-family: monospace; font-size: 0.72rem; color: #64748b; }
+        .cross-bank { font-size: 0.68rem; color: #f59e0b; margin-left: 0.3rem; }
+        .empty { color: #475569; font-size: 0.85rem; }
     </style>
 </head>
 <body>
 
 <header>
     <h1>Shalm</h1>
-    <span>Blockchain Banking Platform</span>
+    <span>Cross-Bank Transfer Platform</span>
 </header>
 
 <main>
@@ -146,14 +137,27 @@
     <div class="alert alert-error">{error}</div>
     {/if}
 
-    <!-- Balances -->
-    <p class="section-title">Account Balances</p>
-    <div class="balances">
-        {#for entry in balances.entrySet()}
-        <div class="balance-card">
-            <div class="org">{entry.key}</div>
-            <div class="amount">{entry.value}</div>
-            <div class="unit">tokens</div>
+    <!-- Bank Account Sections -->
+    <p class="section-label">Accounts by Bank</p>
+    <div class="banks">
+        {#for bankEntry in banks.entrySet()}
+        <div class="bank-section">
+            <div class="bank-header">
+                <span class="bank-name">{bankEntry.key}</span>
+                <span class="org-tag">Org{bankEntry_count}</span>
+            </div>
+            {#for acc in bankEntry.value}
+            <div class="account-row">
+                <div class="account-info">
+                    <div class="client">{acc.owner}</div>
+                    <div class="acc-id">{acc.id}</div>
+                </div>
+                <div class="account-balance">
+                    <div class="amount">{acc.balance}</div>
+                    <div class="unit">tokens</div>
+                </div>
+            </div>
+            {/for}
         </div>
         {/for}
     </div>
@@ -167,7 +171,7 @@
                     <label for="from">From</label>
                     <select id="from" name="from">
                         {#for acc in accounts}
-                        <option value="{acc}">{acc}</option>
+                        <option value="{acc.id}">{acc.owner} ({acc.bank}) — {acc.id}</option>
                         {/for}
                     </select>
                 </div>
@@ -175,13 +179,13 @@
                     <label for="to">To</label>
                     <select id="to" name="to">
                         {#for acc in accounts}
-                        <option value="{acc}">{acc}</option>
+                        <option value="{acc.id}">{acc.owner} ({acc.bank}) — {acc.id}</option>
                         {/for}
                     </select>
                 </div>
                 <div class="form-group">
                     <label for="amount">Amount</label>
-                    <input id="amount" type="number" name="amount" min="1" value="10">
+                    <input id="amount" type="number" name="amount" min="1" value="100">
                 </div>
                 <button type="submit">Send</button>
             </div>
@@ -210,8 +214,14 @@
                     {#for tx in transactions}
                     <tr>
                         <td class="tx-id">{tx.txId.substring(0,8)}…</td>
-                        <td>{tx.from}</td>
-                        <td>{tx.to}</td>
+                        <td>
+                            {tx.fromLabel}
+                            <div style="font-size:0.7rem;font-family:monospace;color:#64748b">{tx.fromId}</div>
+                        </td>
+                        <td>
+                            {tx.toLabel}
+                            <div style="font-size:0.7rem;font-family:monospace;color:#64748b">{tx.toId}</div>
+                        </td>
                         <td>{tx.amount}</td>
                         <td><span class="badge badge-{tx.status}">{tx.status}</span></td>
                         <td>{tx.timestamp}</td>

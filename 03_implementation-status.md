@@ -17,6 +17,124 @@ k8s-worker-02 (192.168.105.5)
 
 ---
 
+## Current State (read this first in a new session)
+
+- **Next phase to implement: Phase 4 — Hyperledger Fabric**
+- Phases 0–3 are done and deployed on the cluster
+- Quarkus API is live at `http://192.168.105.3:30800`
+- Quarkus UI is live at `http://192.168.105.3:30801`
+- All nodes are **arm64** — every custom Docker image must be built multi-arch (`linux/amd64,linux/arm64`)
+- The banking use case is: **ClientA (ACC-B1-001, Bank1/Org1) → ClientB (ACC-B2-001, Bank2/Org2)**
+- Phase 4 chaincode must be **Java** (`fabric-chaincode-java` SDK), **not Go, not Quarkus**
+- Phase 4 chaincode must use the same 4-account model as the API (ACC-B1-001, ACC-B1-002, ACC-B2-001, ACC-B2-002)
+- After Phase 4, the API will add `POST /fabric/transfer` and `GET /fabric/balance/{id}` endpoints
+- `kubectl logs` does NOT work on this cluster (kubelet port unreachable) — use debug pods instead (see rule 7)
+
+---
+
+## Known Issues & Rules — Apply to Every Phase
+
+These were discovered during Phases 2–3. Violating them causes hard-to-debug failures.
+
+### 1. Node architecture is arm64
+
+All Lima VMs run `arm64` (confirmed via `kubectl get nodes -o jsonpath`).
+GitHub Actions `ubuntu-latest` is `amd64`.
+**Rule:** Every Dockerfile build in CI must use multi-arch:
+
+```yaml
+- uses: docker/setup-qemu-action@v3.6.0
+- uses: docker/setup-buildx-action@v3.10.0
+- uses: docker/build-push-action@v5.4.0
+  with:
+    platforms: linux/amd64,linux/arm64
+```
+
+Single-arch images fail silently with exit code 255 and no logs.
+
+### 2. GitHub Actions workflows must live in `.github/workflows/`
+
+Files in `05_cicd/github-actions/` are documentation only — GitHub never reads them.
+**Rule:** Always create the real workflow at `.github/workflows/<name>.yml`.
+The `05_cicd/` copy is optional reference.
+
+### 3. GitHub PAT needs `workflow` scope
+
+Pushing any file under `.github/workflows/` requires a PAT with the `workflow` scope.
+**Rule:** Update the PAT at `https://github.com/settings/tokens` before pushing workflow files.
+
+### 4. GHCR packages are private by default
+
+New packages created by CI are private. The cluster pulls anonymously and gets 403.
+**Rule:** After first CI push, go to `https://github.com/samerhijazi?tab=packages`,
+open the package → Settings → **Change visibility to Public**.
+
+### 5. `git push` will be rejected after CI patches the manifest
+
+The CI workflow commits a manifest update (image SHA) and pushes it back.
+Your local branch is then behind.
+**Rule:** Always use:
+
+```bash
+git pull --rebase origin main && git push origin main
+```
+
+Never just `git push origin main`.
+
+### 6. Jakarta REST 3.0 — missing status constants
+
+Quarkus 3.9.5 uses Jakarta REST 3.0, not 3.1.
+`Response.Status.UNPROCESSABLE_ENTITY` does **not** exist.
+**Rule:** Use the numeric code: `Response.status(422)`.
+Same applies to any status added after REST 3.0 (e.g., 207, 308).
+
+### 7. `kubectl logs` is broken on this cluster
+
+The kubelet API (port 10250) is not reachable from outside the VMs.
+`kubectl logs` always returns `the server could not find the requested resource`.
+**Rule:** To debug a crashing pod, use a one-shot debug pod:
+
+```bash
+kubectl run debug \
+  --image=<same-image> \
+  --restart=Never \
+  -n <namespace> \
+  --env="QUARKUS_LOG_CONSOLE_JSON=false" \
+  -- java -jar /app/quarkus-run.jar
+kubectl describe pod debug -n <namespace>
+kubectl delete pod debug -n <namespace>
+```
+
+### 8. Calico CNI token expires after long cluster uptime
+
+Symptom: new pods stuck in `ContainerCreating` with
+`calico failed (add): error getting ClusterInformation: Unauthorized`.
+**Rule:** Fix immediately with:
+
+```bash
+kubectl rollout restart daemonset/calico-node -n kube-system
+kubectl rollout status daemonset/calico-node -n kube-system
+```
+
+### 9. Never use `-q` (quiet) in CI Maven builds
+
+`mvn package -DskipTests -q` hides compilation errors. The workflow shows
+"Process completed with exit code 1" with no useful output.
+**Rule:** Use `mvn package -DskipTests` (no `-q`) in all CI workflows.
+
+### 10. Load `versions.env` as the first CI step
+
+All future workflows must load the central version file before any other step:
+
+```yaml
+- name: Load versions
+  run: grep -v '^#' versions.env | grep -v '^$' >> $GITHUB_ENV
+```
+
+Then use `${{ env.JAVA_VERSION }}`, `${{ env.QUARKUS_VERSION }}`, etc.
+
+---
+
 ## Repository Structure
 
 ```text
@@ -71,7 +189,7 @@ shalm-platform/
 | 1   | Observability Stack              | `[x] done`    | Prometheus, Grafana, Loki+Promtail, dashboards                    |
 | 2   | Quarkus API                      | `[x] done`    | REST API, in-memory state, metrics, structured logs, GHCR, GitOps |
 | 3   | Quarkus UI                       | `[x] done`    | Qute templates, balance/tx views, wired to API, GitOps            |
-| 4   | Hyperledger Fabric               | `[ ] pending` | 2 orgs, 1 orderer, peers, Go chaincode, API integration           |
+| 4   | Hyperledger Fabric               | `[ ] pending` | 2 orgs, 1 orderer, peers, Java chaincode, API integration         |
 | 5   | Istio                            | `[ ] pending` | Sidecar injection, ingress gateway, Fabric traffic routing        |
 | 6   | Hyperledger Besu                 | `[ ] pending` | 3-node QBFT, Solidity contract, observability                     |
 | 7   | Identity Service                 | `[ ] pending` | OIDC-mock (Quarkus), JWT, API validation                          |
@@ -133,13 +251,32 @@ Monitoring is NOT installed by ansible — it is managed by GitOps in Phase 1.
 **Deliverables:**
 
 - `03_apps/quarkus-api/` — full Quarkus Maven project
-  - `POST /transfer`, `GET /balance/{id}`, `GET /health`, `GET /metrics`
-  - In-memory `Map<String, Integer>` balances
-  - Micrometer: request_count, request_latency, error_count
-  - Structured JSON logs: transaction_id, from, to, amount, status
+  - `POST /transfer` — cross-bank transfer (from: account ID, to: account ID, amount)
+  - `GET /accounts` — list all accounts with owner, bank, balance
+  - `GET /accounts/{id}` — single account detail
+  - `GET /balance/{id}` — balance only (kept for backward compat)
+  - `GET /health`, `GET /metrics`
+  - Micrometer: `transfer_request_count`, `transfer_request_latency`, `transfer_error_count`
+  - Structured JSON logs via MDC: transaction_id, from_account, from_owner, from_bank, to_account, to_owner, to_bank, amount, status
   - `Dockerfile`
-- `02_gitops/quarkus-app/` — Deployment, Service, Ingress manifests
-- `05_cicd/github-actions/quarkus-api.yml` — build, push GHCR, patch manifest
+- `02_gitops/quarkus-app/` — Deployment (NodePort 30800), Service
+- `.github/workflows/quarkus-api.yml` — build, multi-arch push to GHCR, patch manifest
+
+**Account model** (`Account.java`):
+```
+id      — e.g. ACC-B1-001
+owner   — e.g. ClientA
+bank    — e.g. Bank1
+balance — integer tokens
+```
+
+**Seeded accounts:**
+| ID          | Owner   | Bank  | Balance |
+|-------------|---------|-------|---------|
+| ACC-B1-001  | ClientA | Bank1 | 1000    |
+| ACC-B1-002  | ClientC | Bank1 | 500     |
+| ACC-B2-001  | ClientB | Bank2 | 1000    |
+| ACC-B2-002  | ClientD | Bank2 | 500     |
 
 ---
 
@@ -149,12 +286,16 @@ Monitoring is NOT installed by ansible — it is managed by GitOps in Phase 1.
 **Deliverables:**
 
 - `03_apps/quarkus-ui/` — Quarkus project with Qute templates
-  - Transfer form
-  - Balance display
-  - Transaction history
-  - Calls backend API only (no direct blockchain access)
-- `02_gitops/quarkus-ui/` — Deployment, Service manifests
-- `05_cicd/github-actions/quarkus-ui.yml`
+  - Dashboard grouped by bank: **Bank1 | Bank2** side-by-side, each showing clients + account IDs + balances
+  - Transfer form: dropdowns show `ClientA (Bank1) — ACC-B1-001` labels, posts account IDs
+  - Transaction history: shows `ClientA (Bank1)` → `ClientB (Bank2)` with account IDs, status badge, timestamp
+  - Calls `GET /accounts` and `POST /transfer` on quarkus-api via MicroProfile REST client
+  - In-memory transaction store (last 20, lost on pod restart)
+- `02_gitops/quarkus-ui/` — Deployment (NodePort 30801), Service
+- `.github/workflows/quarkus-ui.yml` — multi-arch build, GHCR push, manifest patch
+
+**Use case:** ClientA (ACC-B1-001, Bank1/Org1) transfers tokens to ClientB (ACC-B2-001, Bank2/Org2).
+This is the primary cross-bank transfer scenario visible in the UI and traced through the API logs.
 
 ---
 
@@ -164,9 +305,17 @@ Monitoring is NOT installed by ansible — it is managed by GitOps in Phase 1.
 **Deliverables:**
 
 - `04_blockchain/fabric/network-config/` — crypto-config, configtx.yaml
-- `04_blockchain/fabric/chaincode/` — Go chaincode: `transfer()`, `queryBalance()`
-- `02_gitops/fabric/` — K8s manifests: peer0-orgA, peer0-orgB, orderer
+- `04_blockchain/fabric/chaincode/` — **Java** chaincode (`fabric-chaincode-java`): `transfer()`, `queryBalance()`, `InitLedger()`
+  - NOT Quarkus — chaincode is plain Java running inside Fabric's container runtime
+  - Accounts: ClientA/ACC-B1-001 (Bank1), ClientB/ACC-B2-001 (Bank2), ClientC/ACC-B1-002, ClientD/ACC-B2-002
+- `02_gitops/fabric/` — K8s manifests: peer0-org1, peer0-org2, orderer
 - Fabric SDK integration in `03_apps/quarkus-api/` (new endpoints)
+
+**Rules for this phase:**
+
+- Fabric images (`hyperledger/fabric-peer`, `hyperledger/fabric-orderer`) are multi-arch — pull directly, no build needed
+- No CI/CD workflow for Fabric itself (no custom image); apply rules 5 and 8 for manifest pushes
+- Chaincode is Go — no JVM, no Jakarta REST constraints
 
 ---
 
@@ -191,6 +340,11 @@ Monitoring is NOT installed by ansible — it is managed by GitOps in Phase 1.
 - `02_gitops/besu/` — 3-node K8s Deployments, Services
 - Prometheus scrape config, Loki log shipping
 
+**Rules for this phase:**
+
+- `hyperledger/besu` official image is multi-arch — no custom build needed
+- Apply rule 8 (Calico restart) if pods stay in ContainerCreating after a gap between phases
+
 ---
 
 ### Phase 7 — Identity Service
@@ -204,6 +358,12 @@ Monitoring is NOT installed by ansible — it is managed by GitOps in Phase 1.
 - JWT validation integrated into `03_apps/quarkus-api/`
 - `02_gitops/identity/` — manifests
 - `05_cicd/github-actions/identity-service.yml`
+
+**Rules for this phase:**
+
+- Apply rules 1, 2, 3, 4, 5, 6, 9, 10 (Quarkus app with CI — full checklist)
+- Use `Response.status(401)` not `Response.Status.UNAUTHORIZED` — confirm it exists in Jakarta REST 3.0 first
+- Workflow goes in `.github/workflows/identity-service.yml`, not `05_cicd/`
 
 ---
 
@@ -239,3 +399,10 @@ Monitoring is NOT installed by ansible — it is managed by GitOps in Phase 1.
   - `GET /anomalies` — basic rule-based anomaly detection on Prometheus metrics
 - `02_gitops/ai/` — Deployment, Service manifests
 - `05_cicd/github-actions/ai-agent.yml`
+
+**Rules for this phase:**
+
+- Apply rules 1, 2, 3, 4, 5, 10 (Python app with CI)
+- Python `python:3.12-slim` is multi-arch — base image is fine
+- Custom image still needs `platforms: linux/amd64,linux/arm64` in the build step (rule 1)
+- Workflow goes in `.github/workflows/ai-agent.yml`

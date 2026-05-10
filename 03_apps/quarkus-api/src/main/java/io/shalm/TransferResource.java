@@ -35,8 +35,8 @@ public class TransferResource {
 
     @PostConstruct
     void init() {
-        requestCount = registry.counter("transfer_request_count");
-        errorCount = registry.counter("transfer_error_count");
+        requestCount   = registry.counter("transfer_request_count");
+        errorCount     = registry.counter("transfer_error_count");
         requestLatency = registry.timer("transfer_request_latency");
     }
 
@@ -49,20 +49,22 @@ public class TransferResource {
         try {
             if (req == null || req.from == null || req.to == null || req.amount <= 0) {
                 errorCount.increment();
-                logTransfer(txId, req == null ? null : req.from, req == null ? null : req.to,
-                        req == null ? 0 : req.amount, "invalid");
+                log(txId, null, null, req == null ? 0 : req.amount, "invalid");
                 return Response.status(Response.Status.BAD_REQUEST)
                         .entity(new TransferResponse(txId, "invalid", "Bad request parameters"))
                         .build();
             }
 
+            Account fromAcc = accountService.getAccount(req.from);
+            Account toAcc   = accountService.getAccount(req.to);
+
             boolean ok = accountService.transfer(req.from, req.to, req.amount);
             if (ok) {
-                logTransfer(txId, req.from, req.to, req.amount, "success");
+                log(txId, fromAcc, toAcc, req.amount, "success");
                 return Response.ok(new TransferResponse(txId, "success", "Transfer completed")).build();
             } else {
                 errorCount.increment();
-                logTransfer(txId, req.from, req.to, req.amount, "failed");
+                log(txId, fromAcc, toAcc, req.amount, "failed");
                 return Response.status(422)
                         .entity(new TransferResponse(txId, "failed", "Insufficient funds or unknown account"))
                         .build();
@@ -72,12 +74,16 @@ public class TransferResource {
         }
     }
 
-    private void logTransfer(String txId, String from, String to, int amount, String status) {
+    private void log(String txId, Account from, Account to, int amount, String status) {
         MDC.put("transaction_id", txId);
-        MDC.put("from", from);
-        MDC.put("to", to);
-        MDC.put("amount", amount);
-        MDC.put("status", status);
+        MDC.put("from_account",   from != null ? from.id    : "unknown");
+        MDC.put("from_owner",     from != null ? from.owner : "unknown");
+        MDC.put("from_bank",      from != null ? from.bank  : "unknown");
+        MDC.put("to_account",     to   != null ? to.id      : "unknown");
+        MDC.put("to_owner",       to   != null ? to.owner   : "unknown");
+        MDC.put("to_bank",        to   != null ? to.bank    : "unknown");
+        MDC.put("amount",         amount);
+        MDC.put("status",         status);
         LOG.info("transfer");
         MDC.clear();
     }
