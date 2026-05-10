@@ -61,6 +61,9 @@ git commit -m "Phase <N>: <description>"
 
 # Push
 git push origin main
+
+###########################################################################
+git pull --rebase origin main && git push origin main
 ```
 
 ### Phase-by-phase commit commands

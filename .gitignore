@@ -9,3 +9,6 @@
 
 03_apps/quarkus-api/target/
 03_apps/quarkus-ui/target/
+
+04_blockchain/fabric/network-config/channel-artifacts/
+04_blockchain/fabric/network-config/crypto-material/
