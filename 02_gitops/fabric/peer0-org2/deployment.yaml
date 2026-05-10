@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: peer0-org2
+  namespace: fabric
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: peer0-org2
+  template:
+    metadata:
+      labels:
+        app: peer0-org2
+    spec:
+      containers:
+        - name: peer
+          image: hyperledger/fabric-peer:2.5
+          ports:
+            - containerPort: 7051
+            - containerPort: 7052
+          env:
+            - name: FABRIC_LOGGING_SPEC
+              value: INFO
+            - name: CORE_PEER_ID
+              value: peer0.org2.shalm.local
+            - name: CORE_PEER_ADDRESS
+              value: peer0-org2.fabric.svc.cluster.local:7051
+            - name: CORE_PEER_LISTENADDRESS
+              value: "0.0.0.0:7051"
+            - name: CORE_PEER_CHAINCODEADDRESS
+              value: peer0-org2.fabric.svc.cluster.local:7052
+            - name: CORE_PEER_CHAINCODELISTENADDRESS
+              value: "0.0.0.0:7052"
+            - name: CORE_PEER_GOSSIP_BOOTSTRAP
+              value: peer0-org2.fabric.svc.cluster.local:7051
+            - name: CORE_PEER_GOSSIP_EXTERNALENDPOINT
+              value: peer0-org2.fabric.svc.cluster.local:7051
+            - name: CORE_PEER_LOCALMSPID
+              value: Org2MSP
+            - name: CORE_PEER_MSPCONFIGPATH
+              value: /var/hyperledger/fabric/msp
+            - name: CORE_PEER_TLS_ENABLED
+              value: "false"
+            - name: CORE_PEER_FILESYSTEMPATH
+              value: /var/hyperledger/production
+            - name: CORE_CHAINCODE_EXTERNALBUILDERS
+              value: '[{"name":"ccaas_builder","path":"/opt/hyperledger/ccaas_builder","propagateEnvironment":["CHAINCODE_AS_A_SERVICE_BUILDER_CONFIG"]}]'
+          volumeMounts:
+            - name: msp
+              mountPath: /var/hyperledger/fabric/msp
+            - name: data
+              mountPath: /var/hyperledger/production
+          resources:
+            requests:
+              cpu: 200m
+              memory: 512Mi
+            limits:
+              cpu: 1000m
+              memory: 1Gi
+      volumes:
+        - name: msp
+          secret:
+            secretName: fabric-org2-peer-msp
+        - name: data
+          emptyDir: {}

@@ -19,8 +19,8 @@ k8s-worker-02 (192.168.105.5)
 
 ## Current State (read this first in a new session)
 
-- **Next phase to implement: Phase 4 — Hyperledger Fabric**
-- Phases 0–3 are done and deployed on the cluster
+- **Next phase to implement: Phase 5 — Istio**
+- Phases 0–4 are done (4 = generated, pending deployment)
 - Quarkus API is live at `http://192.168.105.3:30800`
 - Quarkus UI is live at `http://192.168.105.3:30801`
 - All nodes are **arm64** — every custom Docker image must be built multi-arch (`linux/amd64,linux/arm64`)
@@ -189,7 +189,7 @@ shalm-platform/
 | 1   | Observability Stack              | `[x] done`    | Prometheus, Grafana, Loki+Promtail, dashboards                    |
 | 2   | Quarkus API                      | `[x] done`    | REST API, in-memory state, metrics, structured logs, GHCR, GitOps |
 | 3   | Quarkus UI                       | `[x] done`    | Qute templates, balance/tx views, wired to API, GitOps            |
-| 4   | Hyperledger Fabric               | `[ ] pending` | 2 orgs, 1 orderer, peers, Java chaincode, API integration         |
+| 4   | Hyperledger Fabric               | `[x] done`    | 2 orgs, SOLO orderer, CCAAS Java chaincode, /fabric/* endpoints   |
 | 5   | Istio                            | `[ ] pending` | Sidecar injection, ingress gateway, Fabric traffic routing        |
 | 6   | Hyperledger Besu                 | `[ ] pending` | 3-node QBFT, Solidity contract, observability                     |
 | 7   | Identity Service                 | `[ ] pending` | OIDC-mock (Quarkus), JWT, API validation                          |
@@ -263,6 +263,7 @@ Monitoring is NOT installed by ansible — it is managed by GitOps in Phase 1.
 - `.github/workflows/quarkus-api.yml` — build, multi-arch push to GHCR, patch manifest
 
 **Account model** (`Account.java`):
+
 ```
 id      — e.g. ACC-B1-001
 owner   — e.g. ClientA
@@ -271,12 +272,12 @@ balance — integer tokens
 ```
 
 **Seeded accounts:**
-| ID          | Owner   | Bank  | Balance |
+| ID | Owner | Bank | Balance |
 |-------------|---------|-------|---------|
-| ACC-B1-001  | ClientA | Bank1 | 1000    |
-| ACC-B1-002  | ClientC | Bank1 | 500     |
-| ACC-B2-001  | ClientB | Bank2 | 1000    |
-| ACC-B2-002  | ClientD | Bank2 | 500     |
+| ACC-B1-001 | ClientA | Bank1 | 1000 |
+| ACC-B1-002 | ClientC | Bank1 | 500 |
+| ACC-B2-001 | ClientB | Bank2 | 1000 |
+| ACC-B2-002 | ClientD | Bank2 | 500 |
 
 ---
 
@@ -305,7 +306,8 @@ This is the primary cross-bank transfer scenario visible in the UI and traced th
 **Deliverables:**
 
 - `04_blockchain/fabric/network-config/` — crypto-config, configtx.yaml
-- `04_blockchain/fabric/chaincode/` — **Java** chaincode (`fabric-chaincode-java`): `transfer()`, `queryBalance()`, `InitLedger()`
+- `04_blockchain/fabric/chaincode/` — **Java** chaincode (`fabric-chaincode-java`):
+  - `Transfer(ctx, from, to, amount)`, `QueryBalance(ctx, account)`, `InitLedger()`, `createAccount(ctx, accountId, bankId, owner, initialBalance), deleteAccount(ctx, accountId)`, `deposit(ctx, accountId, amount)`, `getAccount(ctx, accountId)`
   - NOT Quarkus — chaincode is plain Java running inside Fabric's container runtime
   - Accounts: ClientA/ACC-B1-001 (Bank1), ClientB/ACC-B2-001 (Bank2), ClientC/ACC-B1-002, ClientD/ACC-B2-002
 - `02_gitops/fabric/` — K8s manifests: peer0-org1, peer0-org2, orderer
@@ -315,7 +317,7 @@ This is the primary cross-bank transfer scenario visible in the UI and traced th
 
 - Fabric images (`hyperledger/fabric-peer`, `hyperledger/fabric-orderer`) are multi-arch — pull directly, no build needed
 - No CI/CD workflow for Fabric itself (no custom image); apply rules 5 and 8 for manifest pushes
-- Chaincode is Go — no JVM, no Jakarta REST constraints
+- Chaincode is Java using fabric-chaincode-java (JVM-based, no Quarkus/Jakarta REST)
 
 ---
 

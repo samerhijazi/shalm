@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fabric-chaincode
+  namespace: fabric
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: fabric-chaincode
+  template:
+    metadata:
+      labels:
+        app: fabric-chaincode
+    spec:
+      containers:
+        - name: chaincode
+          image: ghcr.io/samerhijazi/shalm-chaincode:latest
+          ports:
+            - containerPort: 9999
+          env:
+            - name: CHAINCODE_SERVER_PORT
+              value: "9999"
+            - name: CORE_CHAINCODE_ID_NAME
+              value: bank-transfer_1.0
+          readinessProbe:
+            tcpSocket:
+              port: 9999
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          livenessProbe:
+            tcpSocket:
+              port: 9999
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi

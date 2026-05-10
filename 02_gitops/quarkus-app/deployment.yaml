@@ -21,6 +21,10 @@ spec:
           env:
             - name: QUARKUS_LOG_CONSOLE_JSON
               value: "true"
+            # Phase 4: set FABRIC_ENABLED=true after running create-secrets.sh
+            # and patching in the fabric-org1-admin secret volume below.
+            - name: FABRIC_ENABLED
+              value: "false"
           readinessProbe:
             httpGet:
               path: /health/ready
@@ -40,3 +44,12 @@ spec:
             limits:
               cpu: 500m
               memory: 512Mi
+          volumeMounts:
+            - name: fabric-crypto
+              mountPath: /fabric-crypto
+              readOnly: true
+      volumes:
+        - name: fabric-crypto
+          secret:
+            secretName: fabric-org1-admin
+            optional: true

@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: orderer
+  namespace: fabric
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: orderer
+  template:
+    metadata:
+      labels:
+        app: orderer
+    spec:
+      containers:
+        - name: orderer
+          image: hyperledger/fabric-orderer:2.5
+          ports:
+            - containerPort: 7050
+          env:
+            - name: FABRIC_LOGGING_SPEC
+              value: INFO
+            - name: ORDERER_GENERAL_LISTENADDRESS
+              value: "0.0.0.0"
+            - name: ORDERER_GENERAL_LISTENPORT
+              value: "7050"
+            - name: ORDERER_GENERAL_GENESISMETHOD
+              value: file
+            - name: ORDERER_GENERAL_GENESISFILE
+              value: /var/hyperledger/orderer/genesis.block
+            - name: ORDERER_GENERAL_LOCALMSPID
+              value: OrdererMSP
+            - name: ORDERER_GENERAL_LOCALMSPDIR
+              value: /var/hyperledger/orderer/msp
+            - name: ORDERER_GENERAL_TLS_ENABLED
+              value: "false"
+            - name: ORDERER_GENERAL_CLUSTER_CLIENTCERTIFICATE
+              value: ""
+            - name: ORDERER_GENERAL_CLUSTER_CLIENTPRIVATEKEY
+              value: ""
+          volumeMounts:
+            - name: msp
+              mountPath: /var/hyperledger/orderer/msp
+            - name: genesis
+              mountPath: /var/hyperledger/orderer/genesis.block
+              subPath: genesis.block
+            - name: data
+              mountPath: /var/hyperledger/production
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+      volumes:
+        - name: msp
+          secret:
+            secretName: fabric-orderer-msp
+        - name: genesis
+          secret:
+            secretName: fabric-artifacts
+        - name: data
+          emptyDir: {}

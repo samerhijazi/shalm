@@ -18,6 +18,8 @@
         <quarkus.platform.version>3.9.5</quarkus.platform.version>
         <skipITs>true</skipITs>
         <surefire-plugin.version>3.2.5</surefire-plugin.version>
+        <fabric.gateway.version>1.4.0</fabric.gateway.version>
+        <grpc.version>1.63.0</grpc.version>
     </properties>
 
     <dependencyManagement>
@@ -33,6 +35,7 @@
     </dependencyManagement>
 
     <dependencies>
+        <!-- Quarkus -->
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-resteasy-reactive-jackson</artifactId>
@@ -52,6 +55,22 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-arc</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-config-yaml</artifactId>
+        </dependency>
+
+        <!-- Hyperledger Fabric Gateway SDK (for /fabric/* endpoints) -->
+        <dependency>
+            <groupId>org.hyperledger.fabric</groupId>
+            <artifactId>fabric-gateway</artifactId>
+            <version>${fabric.gateway.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.grpc</groupId>
+            <artifactId>grpc-netty-shaded</artifactId>
+            <version>${grpc.version}</version>
         </dependency>
     </dependencies>
 

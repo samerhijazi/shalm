@@ -1,0 +1,244 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: fabric-setup
+  namespace: fabric
+  annotations:
+    # Re-run this job manually if you need to re-initialize the channel/chaincode.
+    # Delete and re-create: kubectl delete job fabric-setup -n fabric && kubectl apply -f 02_gitops/fabric/setup-job.yaml
+spec:
+  ttlSecondsAfterFinished: 600
+  backoffLimit: 3
+  template:
+    spec:
+      restartPolicy: OnFailure
+      initContainers:
+        # Wait for orderer to be ready
+        - name: wait-orderer
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              until nc -z orderer.fabric.svc.cluster.local 7050; do
+                echo "Waiting for orderer..."; sleep 5
+              done
+              echo "Orderer is ready"
+        # Wait for peer0-org1
+        - name: wait-peer-org1
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              until nc -z peer0-org1.fabric.svc.cluster.local 7051; do
+                echo "Waiting for peer0-org1..."; sleep 5
+              done
+              echo "peer0-org1 is ready"
+        # Wait for peer0-org2
+        - name: wait-peer-org2
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              until nc -z peer0-org2.fabric.svc.cluster.local 7051; do
+                echo "Waiting for peer0-org2..."; sleep 5
+              done
+              echo "peer0-org2 is ready"
+        # Wait for chaincode service
+        - name: wait-chaincode
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              until nc -z fabric-chaincode.fabric.svc.cluster.local 9999; do
+                echo "Waiting for chaincode service..."; sleep 5
+              done
+              echo "Chaincode service is ready"
+      containers:
+        - name: setup
+          image: hyperledger/fabric-tools:2.5
+          command:
+            - bash
+            - -c
+            - |
+              set -euo pipefail
+
+              # ── channel create ────────────────────────────────────────────────
+              echo "==> Creating channel mychannel..."
+              export CORE_PEER_ADDRESS=peer0-org1.fabric.svc.cluster.local:7051
+              export CORE_PEER_LOCALMSPID=Org1MSP
+              export CORE_PEER_MSPCONFIGPATH=/org1-admin-msp
+              export CORE_PEER_TLS_ENABLED=false
+              export FABRIC_CFG_PATH=/etc/hyperledger/fabric
+
+              peer channel create \
+                -o orderer.fabric.svc.cluster.local:7050 \
+                -c mychannel \
+                -f /channel-artifacts/mychannel.tx \
+                --outputBlock /tmp/mychannel.block \
+                --tls false \
+                2>&1 || echo "Channel may already exist, continuing..."
+
+              if [ ! -f /tmp/mychannel.block ]; then
+                echo "Fetching existing channel block..."
+                peer channel fetch 0 /tmp/mychannel.block \
+                  -o orderer.fabric.svc.cluster.local:7050 \
+                  -c mychannel --tls false
+              fi
+
+              # ── join peers ────────────────────────────────────────────────────
+              echo "==> Joining peer0-org1 to mychannel..."
+              export CORE_PEER_ADDRESS=peer0-org1.fabric.svc.cluster.local:7051
+              export CORE_PEER_LOCALMSPID=Org1MSP
+              export CORE_PEER_MSPCONFIGPATH=/org1-admin-msp
+              peer channel join -b /tmp/mychannel.block 2>&1 || echo "peer0-org1 may already be joined"
+
+              echo "==> Joining peer0-org2 to mychannel..."
+              export CORE_PEER_ADDRESS=peer0-org2.fabric.svc.cluster.local:7051
+              export CORE_PEER_LOCALMSPID=Org2MSP
+              export CORE_PEER_MSPCONFIGPATH=/org2-admin-msp
+              peer channel join -b /tmp/mychannel.block 2>&1 || echo "peer0-org2 may already be joined"
+
+              # ── build CCAAS chaincode package ─────────────────────────────────
+              echo "==> Packaging CCAAS chaincode..."
+              mkdir -p /tmp/ccpkg
+
+              cat > /tmp/connection.json << 'EOF'
+              {
+                "address": "fabric-chaincode.fabric.svc.cluster.local:9999",
+                "dial_timeout": "10s",
+                "tls_required": false
+              }
+              EOF
+
+              tar czf /tmp/ccpkg/code.tar.gz -C /tmp connection.json
+
+              cat > /tmp/ccpkg/metadata.json << 'EOF'
+              {
+                "type": "ccaas",
+                "label": "bank-transfer_1.0"
+              }
+              EOF
+
+              tar czf /tmp/bank-transfer.tar.gz -C /tmp/ccpkg metadata.json code.tar.gz
+
+              # ── install on peer0-org1 ─────────────────────────────────────────
+              echo "==> Installing chaincode on peer0-org1..."
+              export CORE_PEER_ADDRESS=peer0-org1.fabric.svc.cluster.local:7051
+              export CORE_PEER_LOCALMSPID=Org1MSP
+              export CORE_PEER_MSPCONFIGPATH=/org1-admin-msp
+              peer lifecycle chaincode install /tmp/bank-transfer.tar.gz 2>&1 || true
+
+              PACKAGE_ID=$(peer lifecycle chaincode queryinstalled 2>&1 \
+                | grep "bank-transfer_1.0" \
+                | awk -F'Package ID: ' '{print $2}' \
+                | awk -F',' '{print $1}' \
+                | tr -d ' ')
+              echo "Package ID: $PACKAGE_ID"
+
+              # ── install on peer0-org2 ─────────────────────────────────────────
+              echo "==> Installing chaincode on peer0-org2..."
+              export CORE_PEER_ADDRESS=peer0-org2.fabric.svc.cluster.local:7051
+              export CORE_PEER_LOCALMSPID=Org2MSP
+              export CORE_PEER_MSPCONFIGPATH=/org2-admin-msp
+              peer lifecycle chaincode install /tmp/bank-transfer.tar.gz 2>&1 || true
+
+              # ── approve from Org1 ─────────────────────────────────────────────
+              echo "==> Approving chaincode from Org1..."
+              export CORE_PEER_ADDRESS=peer0-org1.fabric.svc.cluster.local:7051
+              export CORE_PEER_LOCALMSPID=Org1MSP
+              export CORE_PEER_MSPCONFIGPATH=/org1-admin-msp
+              peer lifecycle chaincode approveformyorg \
+                --channelID mychannel \
+                --name bank-transfer \
+                --version 1.0 \
+                --sequence 1 \
+                --package-id "$PACKAGE_ID" \
+                -o orderer.fabric.svc.cluster.local:7050 \
+                --tls false 2>&1 || echo "Org1 approval may already exist"
+
+              # ── approve from Org2 ─────────────────────────────────────────────
+              echo "==> Approving chaincode from Org2..."
+              export CORE_PEER_ADDRESS=peer0-org2.fabric.svc.cluster.local:7051
+              export CORE_PEER_LOCALMSPID=Org2MSP
+              export CORE_PEER_MSPCONFIGPATH=/org2-admin-msp
+              peer lifecycle chaincode approveformyorg \
+                --channelID mychannel \
+                --name bank-transfer \
+                --version 1.0 \
+                --sequence 1 \
+                --package-id "$PACKAGE_ID" \
+                -o orderer.fabric.svc.cluster.local:7050 \
+                --tls false 2>&1 || echo "Org2 approval may already exist"
+
+              # ── check commit readiness ────────────────────────────────────────
+              echo "==> Checking commit readiness..."
+              export CORE_PEER_ADDRESS=peer0-org1.fabric.svc.cluster.local:7051
+              export CORE_PEER_LOCALMSPID=Org1MSP
+              export CORE_PEER_MSPCONFIGPATH=/org1-admin-msp
+              peer lifecycle chaincode checkcommitreadiness \
+                --channelID mychannel \
+                --name bank-transfer \
+                --version 1.0 \
+                --sequence 1 \
+                --tls false \
+                --output json 2>&1
+
+              # ── commit chaincode ──────────────────────────────────────────────
+              echo "==> Committing chaincode definition..."
+              peer lifecycle chaincode commit \
+                --channelID mychannel \
+                --name bank-transfer \
+                --version 1.0 \
+                --sequence 1 \
+                --peerAddresses peer0-org1.fabric.svc.cluster.local:7051 \
+                --peerAddresses peer0-org2.fabric.svc.cluster.local:7051 \
+                -o orderer.fabric.svc.cluster.local:7050 \
+                --tls false 2>&1 || echo "Chaincode may already be committed"
+
+              # ── InitLedger ────────────────────────────────────────────────────
+              echo "==> Invoking InitLedger..."
+              peer chaincode invoke \
+                -o orderer.fabric.svc.cluster.local:7050 \
+                -C mychannel \
+                -n bank-transfer \
+                --peerAddresses peer0-org1.fabric.svc.cluster.local:7051 \
+                --peerAddresses peer0-org2.fabric.svc.cluster.local:7051 \
+                --tls false \
+                -c '{"function":"InitLedger","Args":[]}' 2>&1
+
+              echo ""
+              echo "==> Fabric setup complete!"
+              echo "==> Querying ACC-B1-001 balance to verify..."
+              sleep 3
+              peer chaincode query \
+                -C mychannel \
+                -n bank-transfer \
+                -c '{"function":"QueryBalance","Args":["ACC-B1-001"]}' 2>&1
+          volumeMounts:
+            - name: org1-admin-msp
+              mountPath: /org1-admin-msp
+            - name: org2-admin-msp
+              mountPath: /org2-admin-msp
+            - name: channel-artifacts
+              mountPath: /channel-artifacts
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+      volumes:
+        - name: org1-admin-msp
+          secret:
+            secretName: fabric-org1-admin-msp
+        - name: org2-admin-msp
+          secret:
+            secretName: fabric-org2-admin-msp
+        - name: channel-artifacts
+          secret:
+            secretName: fabric-artifacts

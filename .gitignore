@@ -4,3 +4,8 @@
 01_infrastructure/lima/ubuntu-24.04.img
 
 00_debug
+
+.claude/settings.local.json
+
+03_apps/quarkus-api/target/
+03_apps/quarkus-ui/target/
