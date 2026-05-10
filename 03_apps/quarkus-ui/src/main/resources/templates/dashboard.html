@@ -5,52 +5,115 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Shalm Platform</title>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: system-ui, sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; }
+        :root {
+            --bg:             #f1f5f9;
+            --surface:        #ffffff;
+            --surface-2:      #f8fafc;
+            --border:         #e2e8f0;
+            --border-2:       #cbd5e1;
+            --text:           #1e293b;
+            --muted:          #64748b;
+            --primary:        #0284c7;
+            --primary-hover:  #0369a1;
+            --primary-light:  #e0f2fe;
+            --danger:         #dc2626;
+            --danger-hover:   #b91c1c;
+            --danger-light:   #fef2f2;
+            --success-bg:     #f0fdf4;
+            --success-border: #bbf7d0;
+            --success-text:   #166534;
+            --error-bg:       #fef2f2;
+            --error-border:   #fecaca;
+            --error-text:     #991b1b;
+        }
 
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+        /* ── Header ── */
         header {
-            background: #1e293b;
-            padding: 1rem 2rem;
-            border-bottom: 1px solid #334155;
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            padding: 0.9rem 2rem;
             display: flex;
             align-items: center;
-            gap: 1rem;
+            gap: 0.75rem;
         }
-        header h1 { font-size: 1.3rem; font-weight: 700; color: #38bdf8; }
-        header span { font-size: 0.8rem; color: #64748b; }
+        header h1 { font-size: 1.15rem; font-weight: 700; color: var(--text); }
+        header .tagline { font-size: 0.8rem; color: var(--muted); }
 
-        main { max-width: 1000px; margin: 0 auto; padding: 2rem 1.5rem; }
+        main { max-width: 1050px; margin: 0 auto; padding: 2rem 1.5rem; }
 
+        /* ── Alerts ── */
+        .alert {
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            margin-bottom: 1.25rem;
+            font-size: 0.875rem;
+            border: 1px solid;
+        }
+        .alert-success { background: var(--success-bg); border-color: var(--success-border); color: var(--success-text); }
+        .alert-error   { background: var(--error-bg);   border-color: var(--error-border);   color: var(--error-text); }
+
+        /* ── Tabs ── */
+        .tabs {
+            display: flex;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 4px;
+            margin-bottom: 1.5rem;
+            gap: 4px;
+        }
+        .tab-btn {
+            flex: 1;
+            padding: 0.5rem 0.75rem;
+            border: none;
+            background: transparent;
+            border-radius: 7px;
+            color: var(--muted);
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.12s, color 0.12s;
+        }
+        .tab-btn:hover:not(.active) { background: var(--surface-2); color: var(--text); }
+        .tab-btn.active { background: var(--primary); color: #fff; font-weight: 600; }
+
+        .tab-content { display: none; }
+        .tab-content.visible { display: block; }
+
+        /* ── Section label ── */
         .section-label {
-            font-size: 0.72rem;
+            font-size: 0.7rem;
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0.1em;
-            color: #64748b;
-            margin-bottom: 0.6rem;
+            color: var(--muted);
+            margin-bottom: 0.75rem;
         }
 
-        /* ── Bank sections ── */
-        .banks { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-bottom: 2rem; }
+        /* ── Bank / Account cards ── */
+        .banks { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-bottom: 0; }
         .bank-section {
-            background: #1e293b;
-            border: 1px solid #334155;
+            background: var(--surface);
+            border: 1px solid var(--border);
             border-radius: 10px;
             overflow: hidden;
         }
         .bank-header {
-            background: #0f172a;
-            border-bottom: 1px solid #334155;
-            padding: 0.7rem 1.25rem;
+            background: var(--surface-2);
+            border-bottom: 1px solid var(--border);
+            padding: 0.65rem 1.25rem;
             display: flex;
             align-items: center;
             gap: 0.5rem;
         }
-        .bank-header .bank-name { font-size: 0.95rem; font-weight: 700; color: #38bdf8; }
-        .bank-header .org-tag {
+        .bank-name { font-size: 0.95rem; font-weight: 700; color: var(--text); }
+        .org-tag {
             font-size: 0.68rem;
-            background: #1e3a5f;
-            color: #7dd3fc;
+            background: var(--primary-light);
+            color: var(--primary);
             padding: 0.15rem 0.5rem;
             border-radius: 4px;
             font-weight: 600;
@@ -60,72 +123,125 @@
             align-items: center;
             justify-content: space-between;
             padding: 0.75rem 1.25rem;
-            border-bottom: 1px solid #1e293b;
+            border-bottom: 1px solid var(--border);
         }
         .account-row:last-child { border-bottom: none; }
-        .account-info .client { font-size: 0.9rem; font-weight: 600; }
-        .account-info .acc-id { font-size: 0.72rem; font-family: monospace; color: #64748b; }
+        .account-info .client { font-size: 0.9rem; font-weight: 600; color: var(--text); }
+        .account-info .acc-id { font-size: 0.72rem; font-family: monospace; color: var(--muted); }
         .account-balance { text-align: right; }
-        .account-balance .amount { font-size: 1.4rem; font-weight: 700; color: #38bdf8; }
-        .account-balance .unit { font-size: 0.7rem; color: #475569; }
-
-        /* ── Alerts ── */
-        .alert { padding: 0.75rem 1rem; border-radius: 8px; margin-bottom: 1.25rem; font-size: 0.875rem; }
-        .alert-success { background: #052e16; border: 1px solid #166534; color: #4ade80; }
-        .alert-error   { background: #2d0a0a; border: 1px solid #991b1b; color: #f87171; }
+        .account-balance .amount { font-size: 1.35rem; font-weight: 700; color: var(--primary); }
+        .account-balance .unit { font-size: 0.7rem; color: var(--muted); }
 
         /* ── Card ── */
-        .card { background: #1e293b; border: 1px solid #334155; border-radius: 10px; padding: 1.5rem; margin-bottom: 1.5rem; }
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin-bottom: 1.25rem;
+        }
         .card h2 {
-            font-size: 0.75rem; font-weight: 700;
-            text-transform: uppercase; letter-spacing: 0.1em;
-            color: #64748b; margin-bottom: 1.25rem;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--muted);
+            margin-bottom: 1.25rem;
         }
 
-        /* ── Transfer form ── */
+        /* ── Forms ── */
         .form-row { display: flex; gap: 1rem; align-items: flex-end; flex-wrap: wrap; }
-        .form-group { display: flex; flex-direction: column; gap: 0.35rem; flex: 1; min-width: 140px; }
-        .form-group label { font-size: 0.75rem; color: #64748b; }
-        select, input[type=number] {
-            background: #0f172a; border: 1px solid #334155; border-radius: 6px;
-            color: #e2e8f0; padding: 0.5rem 0.75rem; font-size: 0.875rem; width: 100%;
+        .form-group { display: flex; flex-direction: column; gap: 0.35rem; flex: 1; min-width: 130px; }
+        .form-group label { font-size: 0.75rem; font-weight: 500; color: var(--muted); }
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
+
+        input[type=text], input[type=number], select {
+            background: var(--surface);
+            border: 1px solid var(--border-2);
+            border-radius: 6px;
+            color: var(--text);
+            padding: 0.5rem 0.75rem;
+            font-size: 0.875rem;
+            width: 100%;
+            transition: border-color 0.12s;
         }
-        select:focus, input:focus { outline: none; border-color: #38bdf8; }
-        button[type=submit] {
-            background: #0284c7; color: #fff; border: none; border-radius: 6px;
-            padding: 0.55rem 1.75rem; font-size: 0.875rem; font-weight: 600;
-            cursor: pointer; white-space: nowrap;
+        input:focus, select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-light); }
+        input::placeholder { color: var(--muted); opacity: 0.7; }
+
+        .btn {
+            border: none;
+            border-radius: 6px;
+            padding: 0.55rem 1.5rem;
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: background 0.12s;
         }
-        button[type=submit]:hover { background: #0369a1; }
+        .btn-primary { background: var(--primary); color: #fff; }
+        .btn-primary:hover { background: var(--primary-hover); }
+        .btn-danger  { background: var(--danger);  color: #fff; }
+        .btn-danger:hover  { background: var(--danger-hover); }
+
+        /* ── Divider between manage cards ── */
+        .manage-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
+
+        /* ── Warning note ── */
+        .note {
+            font-size: 0.78rem;
+            color: var(--muted);
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 0.5rem 0.75rem;
+            margin-bottom: 1rem;
+        }
 
         /* ── Table ── */
         .table-wrap { overflow-x: auto; }
         table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
         thead th {
-            text-align: left; color: #64748b; font-weight: 500;
-            padding: 0.5rem 0.75rem; border-bottom: 1px solid #334155;
+            text-align: left;
+            color: var(--muted);
+            font-weight: 600;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 0.5rem 0.75rem;
+            border-bottom: 2px solid var(--border);
         }
-        tbody td { padding: 0.65rem 0.75rem; border-bottom: 1px solid #1e293b33; }
+        tbody td { padding: 0.65rem 0.75rem; border-bottom: 1px solid var(--border); color: var(--text); }
         tbody tr:last-child td { border-bottom: none; }
+        tbody tr:hover td { background: var(--surface-2); }
 
         .badge {
-            display: inline-block; padding: 0.15rem 0.55rem;
-            border-radius: 4px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+            display: inline-block;
+            padding: 0.2rem 0.55rem;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
         }
-        .badge-success { background: #052e16; color: #4ade80; }
-        .badge-failed  { background: #2d0a0a; color: #f87171; }
-        .badge-invalid { background: #1c1917; color: #a8a29e; }
+        .badge-success { background: #dcfce7; color: #166534; }
+        .badge-failed  { background: #fee2e2; color: #991b1b; }
+        .badge-invalid { background: #f1f5f9; color: #64748b; }
 
-        .tx-id { font-family: monospace; font-size: 0.72rem; color: #64748b; }
-        .cross-bank { font-size: 0.68rem; color: #f59e0b; margin-left: 0.3rem; }
-        .empty { color: #475569; font-size: 0.85rem; }
+        .tx-id { font-family: monospace; font-size: 0.72rem; color: var(--muted); }
+        .cross-bank { font-size: 0.68rem; color: #d97706; margin-left: 0.3rem; }
+        .sub { font-size: 0.7rem; font-family: monospace; color: var(--muted); }
+        .empty { color: var(--muted); font-size: 0.875rem; text-align: center; padding: 2rem 0; }
+
+        @media (max-width: 640px) {
+            .banks, .manage-grid { grid-template-columns: 1fr; }
+            .form-grid { grid-template-columns: 1fr; }
+        }
     </style>
 </head>
 <body>
 
 <header>
     <h1>Shalm</h1>
-    <span>Cross-Bank Transfer Platform</span>
+    <span class="tagline">Cross-Bank Transfer Platform</span>
 </header>
 
 <main>
@@ -137,102 +253,182 @@
     <div class="alert alert-error">{error}</div>
     {/if}
 
-    <!-- Bank Account Sections -->
-    <p class="section-label">Accounts by Bank</p>
-    <div class="banks">
-        {#for bankEntry in banks.entrySet()}
-        <div class="bank-section">
-            <div class="bank-header">
-                <span class="bank-name">{bankEntry.key}</span>
-                <span class="org-tag">Org{bankEntry_count}</span>
-            </div>
-            {#for acc in bankEntry.value}
-            <div class="account-row">
-                <div class="account-info">
-                    <div class="client">{acc.owner}</div>
-                    <div class="acc-id">{acc.id}</div>
+    <!-- Tab Navigation -->
+    <div class="tabs">
+        <button class="tab-btn" data-tab="accounts"  onclick="showTab('accounts')">Accounts</button>
+        <button class="tab-btn" data-tab="transfer"  onclick="showTab('transfer')">Transfer</button>
+        <button class="tab-btn" data-tab="history"   onclick="showTab('history')">History</button>
+        <button class="tab-btn" data-tab="manage"    onclick="showTab('manage')">Manage</button>
+    </div>
+
+    <!-- ── Tab: Accounts ── -->
+    <div id="tab-accounts" class="tab-content">
+        <p class="section-label">Accounts by Bank</p>
+        <div class="banks">
+            {#for bankEntry in banks.entrySet()}
+            <div class="bank-section">
+                <div class="bank-header">
+                    <span class="bank-name">{bankEntry.key}</span>
+                    <span class="org-tag">Org{bankEntry_count}</span>
                 </div>
-                <div class="account-balance">
-                    <div class="amount">{acc.balance}</div>
-                    <div class="unit">tokens</div>
+                {#for acc in bankEntry.value}
+                <div class="account-row">
+                    <div class="account-info">
+                        <div class="client">{acc.owner}</div>
+                        <div class="acc-id">{acc.id}</div>
+                    </div>
+                    <div class="account-balance">
+                        <div class="amount">{acc.balance}</div>
+                        <div class="unit">tokens</div>
+                    </div>
                 </div>
+                {/for}
             </div>
             {/for}
         </div>
-        {/for}
     </div>
 
-    <!-- Transfer -->
-    <div class="card">
-        <h2>Transfer</h2>
-        <form method="POST" action="/transfer">
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="from">From</label>
-                    <select id="from" name="from">
-                        {#for acc in accounts}
-                        <option value="{acc.id}">{acc.owner} ({acc.bank}) — {acc.id}</option>
-                        {/for}
-                    </select>
+    <!-- ── Tab: Transfer ── -->
+    <div id="tab-transfer" class="tab-content">
+        <div class="card">
+            <h2>Transfer Tokens</h2>
+            <form method="POST" action="/transfer">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="from">From</label>
+                        <select id="from" name="from">
+                            {#for acc in accounts}
+                            <option value="{acc.id}">{acc.owner} ({acc.bank}) — {acc.id}</option>
+                            {/for}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="to">To</label>
+                        <select id="to" name="to">
+                            {#for acc in accounts}
+                            <option value="{acc.id}">{acc.owner} ({acc.bank}) — {acc.id}</option>
+                            {/for}
+                        </select>
+                    </div>
+                    <div class="form-group" style="max-width:130px">
+                        <label for="amount">Amount</label>
+                        <input id="amount" type="number" name="amount" min="1" value="100">
+                    </div>
+                    <button type="submit" class="btn btn-primary">Send</button>
                 </div>
-                <div class="form-group">
-                    <label for="to">To</label>
-                    <select id="to" name="to">
-                        {#for acc in accounts}
-                        <option value="{acc.id}">{acc.owner} ({acc.bank}) — {acc.id}</option>
-                        {/for}
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="amount">Amount</label>
-                    <input id="amount" type="number" name="amount" min="1" value="100">
-                </div>
-                <button type="submit">Send</button>
-            </div>
-        </form>
-    </div>
-
-    <!-- Transaction History -->
-    <div class="card">
-        <h2>Transaction History</h2>
-        {#if transactions.isEmpty()}
-        <p class="empty">No transactions yet. Submit a transfer above.</p>
-        {#else}
-        <div class="table-wrap">
-            <table>
-                <thead>
-                    <tr>
-                        <th>TX ID</th>
-                        <th>From</th>
-                        <th>To</th>
-                        <th>Amount</th>
-                        <th>Status</th>
-                        <th>Time</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {#for tx in transactions}
-                    <tr>
-                        <td class="tx-id">{tx.txId.substring(0,8)}…</td>
-                        <td>
-                            {tx.fromLabel}
-                            <div style="font-size:0.7rem;font-family:monospace;color:#64748b">{tx.fromId}</div>
-                        </td>
-                        <td>
-                            {tx.toLabel}
-                            <div style="font-size:0.7rem;font-family:monospace;color:#64748b">{tx.toId}</div>
-                        </td>
-                        <td>{tx.amount}</td>
-                        <td><span class="badge badge-{tx.status}">{tx.status}</span></td>
-                        <td>{tx.timestamp}</td>
-                    </tr>
-                    {/for}
-                </tbody>
-            </table>
+            </form>
         </div>
-        {/if}
+    </div>
+
+    <!-- ── Tab: History ── -->
+    <div id="tab-history" class="tab-content">
+        <div class="card">
+            <h2>Transaction History</h2>
+            {#if transactions.isEmpty()}
+            <p class="empty">No transactions yet — submit a transfer first.</p>
+            {#else}
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>TX ID</th>
+                            <th>From</th>
+                            <th>To</th>
+                            <th>Amount</th>
+                            <th>Status</th>
+                            <th>Time</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {#for tx in transactions}
+                        <tr>
+                            <td class="tx-id">{tx.txId.substring(0,8)}…</td>
+                            <td>
+                                <div>{tx.fromLabel}</div>
+                                <div class="sub">{tx.fromId}</div>
+                            </td>
+                            <td>
+                                <div>{tx.toLabel}</div>
+                                <div class="sub">{tx.toId}</div>
+                            </td>
+                            <td><strong>{tx.amount}</strong></td>
+                            <td><span class="badge badge-{tx.status}">{tx.status}</span></td>
+                            <td class="sub">{tx.timestamp}</td>
+                        </tr>
+                        {/for}
+                    </tbody>
+                </table>
+            </div>
+            {/if}
+        </div>
+    </div>
+
+    <!-- ── Tab: Manage ── -->
+    <div id="tab-manage" class="tab-content">
+        <div class="manage-grid">
+
+            <!-- Create Account -->
+            <div class="card">
+                <h2>Create Account</h2>
+                <form method="POST" action="/manage/create">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="new-id">Account ID</label>
+                            <input id="new-id" type="text" name="id" placeholder="ACC-B1-003" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="new-owner">Owner Name</label>
+                            <input id="new-owner" type="text" name="owner" placeholder="ClientE" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="new-bank">Bank</label>
+                            <select id="new-bank" name="bank">
+                                <option value="Bank1">Bank1 (Org1)</option>
+                                <option value="Bank2">Bank2 (Org2)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="new-balance">Initial Balance</label>
+                            <input id="new-balance" type="number" name="initialBalance" min="0" value="500">
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Create Account</button>
+                </form>
+            </div>
+
+            <!-- Delete Account -->
+            <div class="card">
+                <h2>Delete Account</h2>
+                <div class="note">Removes the account from the in-memory store. Seeded accounts will re-appear on pod restart.</div>
+                <form method="POST" action="/manage/delete">
+                    <div class="form-group" style="margin-bottom:1rem">
+                        <label for="del-id">Account</label>
+                        <select id="del-id" name="id">
+                            {#for acc in accounts}
+                            <option value="{acc.id}">{acc.owner} ({acc.bank}) — {acc.id}</option>
+                            {/for}
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-danger">Delete Account</button>
+                </form>
+            </div>
+
+        </div>
     </div>
 
 </main>
+
+<script>
+    function showTab(name) {
+        document.querySelectorAll('.tab-content').forEach(function(el) { el.classList.remove('visible'); });
+        document.querySelectorAll('.tab-btn').forEach(function(el) { el.classList.remove('active'); });
+        var content = document.getElementById('tab-' + name);
+        if (content) content.classList.add('visible');
+        var btn = document.querySelector('[data-tab="' + name + '"]');
+        if (btn) btn.classList.add('active');
+    }
+    showTab('{activeTab}');
+</script>
+
 </body>
 </html>

@@ -35,6 +35,19 @@ public class AccountService {
                 .collect(Collectors.toList());
     }
 
+    public Account createAccount(String id, String owner, String bank, int initialBalance) {
+        if (accounts.containsKey(id)) {
+            throw new IllegalArgumentException("Account already exists: " + id);
+        }
+        Account account = new Account(id, owner, bank, initialBalance);
+        accounts.put(id, account);
+        return account;
+    }
+
+    public boolean deleteAccount(String id) {
+        return accounts.remove(id) != null;
+    }
+
     public synchronized boolean transfer(String fromId, String toId, int amount) {
         Account from = accounts.get(fromId);
         Account to   = accounts.get(toId);
