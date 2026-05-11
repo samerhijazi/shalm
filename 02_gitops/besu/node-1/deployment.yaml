@@ -1,0 +1,83 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: besu-node-1
+  namespace: besu
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: besu-node-1
+  template:
+    metadata:
+      labels:
+        app: besu-node-1
+        besu-node: "true"
+    spec:
+      containers:
+        - name: besu
+          image: hyperledger/besu:24.10.0
+          command:
+            - /opt/besu/bin/besu
+            - --genesis-file=/config/genesis.json
+            - --node-private-key-file=/secrets/key
+            - --static-nodes-file=/config/static-nodes.json
+            - --data-path=/data
+            - --p2p-host=0.0.0.0
+            - --p2p-port=30303
+            - --rpc-http-enabled=true
+            - --rpc-http-host=0.0.0.0
+            - --rpc-http-port=8545
+            - --rpc-http-api=ETH,NET,QBFT,ADMIN,TXPOOL
+            - --rpc-http-cors-origins=*
+            - --host-allowlist=*
+            - --rpc-http-authentication-enabled=false
+            - --metrics-enabled=true
+            - --metrics-host=0.0.0.0
+            - --metrics-port=9545
+            - --logging=INFO
+          ports:
+            - name: p2p
+              containerPort: 30303
+              protocol: TCP
+            - name: rpc-http
+              containerPort: 8545
+              protocol: TCP
+            - name: metrics
+              containerPort: 9545
+              protocol: TCP
+          volumeMounts:
+            - name: config
+              mountPath: /config
+            - name: key
+              mountPath: /secrets
+            - name: data
+              mountPath: /data
+          resources:
+            requests:
+              cpu: 200m
+              memory: 512Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+          readinessProbe:
+            httpGet:
+              path: /liveness
+              port: 8545
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /liveness
+              port: 8545
+            initialDelaySeconds: 30
+            periodSeconds: 30
+      volumes:
+        - name: config
+          configMap:
+            name: besu-config
+        - name: key
+          secret:
+            secretName: besu-node-1-key
+        - name: data
+          emptyDir: {}
