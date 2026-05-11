@@ -1,0 +1,39 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kubernetes-dashboard
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+  finalizers:
+    - resources-finalizer.argocd.io
+spec:
+  project: default
+  source:
+    repoURL: https://kubernetes.github.io/dashboard/
+    targetRevision: 7.12.0
+    chart: kubernetes-dashboard
+    helm:
+      values: |
+        kong:
+          enabled: true
+          proxy:
+            type: NodePort
+            http:
+              enabled: true
+              nodePort: 30090
+            tls:
+              nodePort: 30091
+        app:
+          ingress:
+            enabled: false
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kubernetes-dashboard
+  syncPolicy:
+    automated:
+      selfHeal: true
+      prune: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
