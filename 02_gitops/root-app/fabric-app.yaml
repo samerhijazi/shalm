@@ -11,6 +11,8 @@ spec:
     repoURL: https://github.com/samerhijazi/shalm
     targetRevision: HEAD
     path: 02_gitops/fabric
+    directory:
+      recurse: true
   destination:
     server: https://kubernetes.default.svc
     namespace: fabric
