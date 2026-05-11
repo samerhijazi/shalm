@@ -47,8 +47,17 @@ spec:
             - name: CORE_CHAINCODE_EXTERNALBUILDERS
               value: '[{"name":"ccaas_builder","path":"/opt/hyperledger/ccaas_builder","propagateEnvironment":["CHAINCODE_AS_A_SERVICE_BUILDER_CONFIG"]}]'
           volumeMounts:
-            - name: msp
-              mountPath: /var/hyperledger/fabric/msp
+            - name: msp-config
+              mountPath: /var/hyperledger/fabric/msp/config.yaml
+              subPath: config.yaml
+            - name: msp-cacerts
+              mountPath: /var/hyperledger/fabric/msp/cacerts
+            - name: msp-keystore
+              mountPath: /var/hyperledger/fabric/msp/keystore
+            - name: msp-signcerts
+              mountPath: /var/hyperledger/fabric/msp/signcerts
+            - name: msp-tlscacerts
+              mountPath: /var/hyperledger/fabric/msp/tlscacerts
             - name: data
               mountPath: /var/hyperledger/production
           resources:
@@ -59,8 +68,20 @@ spec:
               cpu: 1000m
               memory: 1Gi
       volumes:
-        - name: msp
+        - name: msp-config
           secret:
             secretName: fabric-org1-peer-msp
+        - name: msp-cacerts
+          secret:
+            secretName: fabric-org1-peer-msp-cacerts
+        - name: msp-keystore
+          secret:
+            secretName: fabric-org1-peer-msp-keystore
+        - name: msp-signcerts
+          secret:
+            secretName: fabric-org1-peer-msp-signcerts
+        - name: msp-tlscacerts
+          secret:
+            secretName: fabric-org1-peer-msp-tlscacerts
         - name: data
           emptyDir: {}

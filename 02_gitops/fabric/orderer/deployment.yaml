@@ -40,8 +40,16 @@ spec:
             - name: ORDERER_GENERAL_CLUSTER_CLIENTPRIVATEKEY
               value: ""
           volumeMounts:
-            - name: msp
-              mountPath: /var/hyperledger/orderer/msp
+            - name: msp-admincerts
+              mountPath: /var/hyperledger/orderer/msp/admincerts
+            - name: msp-cacerts
+              mountPath: /var/hyperledger/orderer/msp/cacerts
+            - name: msp-keystore
+              mountPath: /var/hyperledger/orderer/msp/keystore
+            - name: msp-signcerts
+              mountPath: /var/hyperledger/orderer/msp/signcerts
+            - name: msp-tlscacerts
+              mountPath: /var/hyperledger/orderer/msp/tlscacerts
             - name: genesis
               mountPath: /var/hyperledger/orderer/genesis.block
               subPath: genesis.block
@@ -55,9 +63,21 @@ spec:
               cpu: 500m
               memory: 512Mi
       volumes:
-        - name: msp
+        - name: msp-admincerts
           secret:
-            secretName: fabric-orderer-msp
+            secretName: fabric-orderer-msp-admincerts
+        - name: msp-cacerts
+          secret:
+            secretName: fabric-orderer-msp-cacerts
+        - name: msp-keystore
+          secret:
+            secretName: fabric-orderer-msp-keystore
+        - name: msp-signcerts
+          secret:
+            secretName: fabric-orderer-msp-signcerts
+        - name: msp-tlscacerts
+          secret:
+            secretName: fabric-orderer-msp-tlscacerts
         - name: genesis
           secret:
             secretName: fabric-artifacts
