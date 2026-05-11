@@ -11,7 +11,7 @@ Read `03_implementation-status.md` first — it has the current phase, what's do
 - **Cluster:** 3 Lima VMs — master `192.168.105.3`, workers `192.168.105.4 / .5`
 - **All nodes are arm64** — every custom Docker image must be built multi-arch (`linux/amd64,linux/arm64`)
 - **Registry:** `ghcr.io/samerhijazi` — new packages are private by default; make them public after first CI push
-- **Kubeconfig:** `export KUBECONFIG=~/.lima/k8s-master/conf/kubeconfig.yaml`
+- **Kubeconfig:** Cluster config is saved in `~/.kube/config` — `kubectl` works without any extra env vars.
 
 ```bash
 limactl shell k8s-master          # SSH into master
@@ -21,13 +21,13 @@ kubectl get applications -n argocd
 
 ## Platform URLs
 
-| Service    | URL                        | Credentials        |
-|------------|----------------------------|--------------------|
-| ArgoCD     | http://192.168.105.3:30080 | admin / `GhPtA0-v7iFqnPkX` |
-| Grafana    | http://192.168.105.3:30300 | admin / `shalm-admin` |
-| Prometheus | http://192.168.105.3:30090 | — |
-| Quarkus API| http://192.168.105.3:30800 | — |
-| Quarkus UI | http://192.168.105.3:30801 | — |
+| Service     | URL                        | Credentials                |
+| ----------- | -------------------------- | -------------------------- |
+| ArgoCD      | http://192.168.105.3:30080 | admin / `GhPtA0-v7iFqnPkX` |
+| Grafana     | http://192.168.105.3:30300 | admin / `shalm-admin`      |
+| Prometheus  | http://192.168.105.3:30090 | —                          |
+| Quarkus API | http://192.168.105.3:30800 | —                          |
+| Quarkus UI  | http://192.168.105.3:30801 | —                          |
 
 ## Build & Run
 
@@ -53,12 +53,14 @@ Dockerfiles use a two-stage build: `maven:3.9.6-eclipse-temurin-21` → `eclipse
 ## CI/CD Rules
 
 Every workflow must:
+
 1. Load versions as the first step: `grep -v '^#' versions.env | grep -v '^$' >> $GITHUB_ENV`
 2. Use multi-arch build (QEMU + Buildx + `platforms: linux/amd64,linux/arm64`)
 3. Live in `.github/workflows/<name>.yml` — files in `05_cicd/github-actions/` are documentation only
 4. Use `mvn package -DskipTests` (never `-q`)
 
 After CI pushes a manifest update, always pull before pushing locally:
+
 ```bash
 git pull --rebase origin main && git push origin main
 ```
@@ -115,6 +117,7 @@ Service mesh:  Istio (namespace: istio-system) — sidecar on fabric namespace
 ## Known Issues (apply to every phase)
 
 **`kubectl logs` is broken** — kubelet port 10250 unreachable. Debug crashing pods with:
+
 ```bash
 kubectl run debug --image=<same-image> --restart=Never -n <namespace> \
   --env="QUARKUS_LOG_CONSOLE_JSON=false" -- java -jar /app/quarkus-run.jar
@@ -123,6 +126,7 @@ kubectl delete pod debug -n <namespace>
 ```
 
 **Calico token expiry** — pods stuck in `ContainerCreating` with "Unauthorized":
+
 ```bash
 kubectl rollout restart daemonset/calico-node -n kube-system
 ```
