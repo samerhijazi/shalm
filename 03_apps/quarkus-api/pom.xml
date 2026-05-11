@@ -19,7 +19,7 @@
         <skipITs>true</skipITs>
         <surefire-plugin.version>3.2.5</surefire-plugin.version>
         <fabric.gateway.version>1.4.0</fabric.gateway.version>
-        <grpc.version>1.63.0</grpc.version>
+        <grpc.version>1.81.0</grpc.version>
     </properties>
 
     <dependencyManagement>
