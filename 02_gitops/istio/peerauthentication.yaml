@@ -5,6 +5,7 @@ metadata:
   namespace: fabric
   annotations:
     argocd.argoproj.io/sync-wave: "2"
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
 spec:
   mtls:
     mode: PERMISSIVE
