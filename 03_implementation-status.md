@@ -19,8 +19,9 @@ k8s-worker-02 (192.168.105.5)
 
 ## Current State (read this first in a new session)
 
-- **Next phase to implement: Phase 6 — Hyperledger Besu**
+- **Next phase to implement: Phase 8 — CI/CD**
 - Phases 0–5 are done
+- Phases 6 (Besu) and 7 (Identity Service) are **skipped** — network config kept in `04_blockchain/besu/` for reference
 - Quarkus API is live at `http://192.168.105.3:30800`
 - Quarkus UI is live at `http://192.168.105.3:30801`
 - All nodes are **arm64** — every custom Docker image must be built multi-arch (`linux/amd64,linux/arm64`)
@@ -191,8 +192,8 @@ shalm-platform/
 | 3   | Quarkus UI                       | `[x] done`    | Qute templates, balance/tx views, wired to API, GitOps            |
 | 4   | Hyperledger Fabric               | `[x] done`    | 2 orgs, SOLO orderer, CCAAS Java chaincode, /fabric/* endpoints   |
 | 5   | Istio                            | `[x] done`    | Sidecar injection, ingress gateway, Fabric traffic routing        |
-| 6   | Hyperledger Besu                 | `[ ] pending` | 3-node QBFT, Solidity contract, observability                     |
-| 7   | Identity Service                 | `[ ] pending` | OIDC-mock (Quarkus), JWT, API validation                          |
+| 6   | Hyperledger Besu                 | `[s] skipped` | Network config kept in `04_blockchain/besu/`; no K8s manifests   |
+| 7   | Identity Service                 | `[s] skipped` | No files generated                                                |
 | 8   | CI/CD                            | `[ ] pending` | GitHub Actions per app, GHCR push, manifest patch, ArgoCD sync    |
 | 9   | SRE Layer                        | `[ ] pending` | PrometheusRules, Alertmanager, failure scripts                    |
 | 10  | AI Observability                 | `[ ] pending` | Python FastAPI, Loki+Prometheus queries, /summary, /anomalies     |
@@ -204,6 +205,7 @@ shalm-platform/
 - `[ ] pending` — not started
 - `[~] in-progress` — currently being generated
 - `[x] done` — generated and reviewed
+- `[s] skipped` — intentionally omitted from the platform
 
 ---
 
