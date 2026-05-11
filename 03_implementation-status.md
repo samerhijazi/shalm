@@ -19,8 +19,8 @@ k8s-worker-02 (192.168.105.5)
 
 ## Current State (read this first in a new session)
 
-- **Next phase to implement: Phase 5 — Istio**
-- Phases 0–4 are done (4 = generated, pending deployment)
+- **Next phase to implement: Phase 6 — Hyperledger Besu**
+- Phases 0–5 are done
 - Quarkus API is live at `http://192.168.105.3:30800`
 - Quarkus UI is live at `http://192.168.105.3:30801`
 - All nodes are **arm64** — every custom Docker image must be built multi-arch (`linux/amd64,linux/arm64`)
@@ -190,7 +190,7 @@ shalm-platform/
 | 2   | Quarkus API                      | `[x] done`    | REST API, in-memory state, metrics, structured logs, GHCR, GitOps |
 | 3   | Quarkus UI                       | `[x] done`    | Qute templates, balance/tx views, wired to API, GitOps            |
 | 4   | Hyperledger Fabric               | `[x] done`    | 2 orgs, SOLO orderer, CCAAS Java chaincode, /fabric/* endpoints   |
-| 5   | Istio                            | `[ ] pending` | Sidecar injection, ingress gateway, Fabric traffic routing        |
+| 5   | Istio                            | `[x] done`    | Sidecar injection, ingress gateway, Fabric traffic routing        |
 | 6   | Hyperledger Besu                 | `[ ] pending` | 3-node QBFT, Solidity contract, observability                     |
 | 7   | Identity Service                 | `[ ] pending` | OIDC-mock (Quarkus), JWT, API validation                          |
 | 8   | CI/CD                            | `[ ] pending` | GitHub Actions per app, GHCR push, manifest patch, ArgoCD sync    |

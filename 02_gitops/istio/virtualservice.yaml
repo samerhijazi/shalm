@@ -1,0 +1,63 @@
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: shalm-routes
+  namespace: istio-system
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  hosts:
+    - "*"
+  gateways:
+    - istio-system/shalm-gateway
+  http:
+    # Fabric endpoints — must be listed before the catch-all UI route
+    - match:
+        - uri:
+            prefix: /fabric/
+      route:
+        - destination:
+            host: quarkus-api.quarkus-api.svc.cluster.local
+            port:
+              number: 8080
+    - match:
+        - uri:
+            prefix: /accounts
+      route:
+        - destination:
+            host: quarkus-api.quarkus-api.svc.cluster.local
+            port:
+              number: 8080
+    - match:
+        - uri:
+            prefix: /transfer
+      route:
+        - destination:
+            host: quarkus-api.quarkus-api.svc.cluster.local
+            port:
+              number: 8080
+    - match:
+        - uri:
+            prefix: /balance/
+      route:
+        - destination:
+            host: quarkus-api.quarkus-api.svc.cluster.local
+            port:
+              number: 8080
+    - match:
+        - uri:
+            prefix: /health
+      route:
+        - destination:
+            host: quarkus-api.quarkus-api.svc.cluster.local
+            port:
+              number: 8080
+    # Catch-all — Quarkus UI
+    - match:
+        - uri:
+            prefix: /
+      route:
+        - destination:
+            host: quarkus-ui.quarkus-ui.svc.cluster.local
+            port:
+              number: 8080
