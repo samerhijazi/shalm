@@ -14,29 +14,7 @@ spec:
     targetRevision: 1.23.2
     chart: gateway
     helm:
-      values: |
-        name: istio-ingressgateway
-        replicaCount: 1
-        autoscaling:
-          enabled: false
-        service:
-          type: LoadBalancer
-          ports:
-            - name: http2
-              port: 80
-              targetPort: 8080
-            - name: https
-              port: 443
-              targetPort: 8443
-        resources:
-          requests:
-            cpu: 100m
-            memory: 128Mi
-          limits:
-            cpu: 500m
-            memory: 256Mi
-        labels:
-          istio: ingressgateway
+      values: ""
   destination:
     server: https://kubernetes.default.svc
     namespace: istio-system
