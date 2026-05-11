@@ -21,7 +21,7 @@ spec:
             type: NodePort
             http:
               enabled: true
-              nodePort: 30090
+              nodePort: 30092
             tls:
               nodePort: 30091
         app:
