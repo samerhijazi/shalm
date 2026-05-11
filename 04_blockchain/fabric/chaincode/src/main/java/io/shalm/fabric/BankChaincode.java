@@ -11,6 +11,12 @@ public class BankChaincode extends ChaincodeBase {
 
     private final ObjectMapper mapper = new ObjectMapper();
 
+    public BankChaincode() {
+        // NettyChaincodeServer calls validateOptions() during construction before
+        // processEnvironmentOptions() would otherwise run — so we call it here first.
+        processEnvironmentOptions();
+    }
+
     @Override
     public Response init(ChaincodeStub stub) {
         try {
