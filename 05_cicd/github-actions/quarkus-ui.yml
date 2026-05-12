@@ -1,16 +1,16 @@
-name: quarkus-api CI
+name: quarkus-ui CI
 
 on:
   push:
     branches: [main]
     paths:
-      - "03_apps/quarkus-api/**"
-      - ".github/workflows/quarkus-api.yml"
+      - "03_apps/quarkus-ui/**"
+      - ".github/workflows/quarkus-ui.yml"
       - "versions.env"
   workflow_dispatch:
 
 env:
-  IMAGE: ghcr.io/samerhijazi/quarkus-api
+  IMAGE: ghcr.io/samerhijazi/quarkus-ui
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
@@ -36,7 +36,7 @@ jobs:
 
       - name: Build with Maven
         run: mvn package -DskipTests
-        working-directory: 03_apps/quarkus-api
+        working-directory: 03_apps/quarkus-ui
 
       - name: Set up QEMU (multi-arch emulation)
         uses: docker/setup-qemu-action@v3.6.0
@@ -54,7 +54,7 @@ jobs:
       - name: Build and push Docker image (amd64 + arm64)
         uses: docker/build-push-action@v5.4.0
         with:
-          context: 03_apps/quarkus-api
+          context: 03_apps/quarkus-ui
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
@@ -64,13 +64,13 @@ jobs:
       - name: Patch deployment manifest
         run: |
           sed -i "s|image: ${{ env.IMAGE }}:.*|image: ${{ env.IMAGE }}:${{ github.sha }}|" \
-            02_gitops/quarkus-app/deployment.yaml
+            02_gitops/quarkus-ui/deployment.yaml
 
       - name: Commit and push manifest update
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add 02_gitops/quarkus-app/deployment.yaml
-          git commit -m "ci: update quarkus-api image to ${{ github.sha }}"
+          git add 02_gitops/quarkus-ui/deployment.yaml
+          git commit -m "ci: update quarkus-ui image to ${{ github.sha }}"
           git pull --rebase origin main
           git push origin main

@@ -19,7 +19,7 @@ k8s-worker-02 (192.168.105.5)
 
 ## Current State (read this first in a new session)
 
-- **Next phase to implement: Phase 8 — CI/CD**
+- **All phases complete (0–5, 8–10). Phases 6 and 7 skipped.**
 - Phases 0–5 are done
 - Phases 6 (Besu) and 7 (Identity Service) are **skipped** — network config kept in `04_blockchain/besu/` for reference
 - Quarkus API is live at `http://192.168.105.3:30800`
@@ -194,9 +194,9 @@ shalm-platform/
 | 5   | Istio                            | `[x] done`    | Sidecar injection, ingress gateway, Fabric traffic routing        |
 | 6   | Hyperledger Besu                 | `[s] skipped` | Network config kept in `04_blockchain/besu/`; no K8s manifests   |
 | 7   | Identity Service                 | `[s] skipped` | No files generated                                                |
-| 8   | CI/CD                            | `[ ] pending` | GitHub Actions per app, GHCR push, manifest patch, ArgoCD sync    |
-| 9   | SRE Layer                        | `[ ] pending` | PrometheusRules, Alertmanager, failure scripts                    |
-| 10  | AI Observability                 | `[ ] pending` | Python FastAPI, Loki+Prometheus queries, /summary, /anomalies     |
+| 8   | CI/CD                            | `[x] done`    | Workflows: quarkus-api, quarkus-ui, chaincode — multi-arch, manifest patch, ArgoCD sync |
+| 9   | SRE Layer                        | `[x] done`    | PrometheusRules (API/pod/fabric), Alertmanager routing, simulate-failures.sh |
+| 10  | AI Observability                 | `[x] done`    | Python FastAPI, Loki+Prometheus queries, /summary, /anomalies, GHCR CI |
 
 ---
 

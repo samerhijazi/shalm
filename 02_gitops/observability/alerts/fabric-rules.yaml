@@ -1,0 +1,56 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: fabric-alerts
+  namespace: observability
+  labels:
+    prometheus: kube-prometheus
+    role: alert-rules
+spec:
+  groups:
+    - name: fabric.peers
+      interval: 30s
+      rules:
+        - alert: FabricPeerDown
+          expr: |
+            kube_pod_status_ready{
+              condition="true",
+              namespace="fabric",
+              pod=~"peer.*"
+            } == 0
+          for: 2m
+          labels:
+            severity: critical
+            component: fabric
+          annotations:
+            summary: "Fabric peer {{ $labels.pod }} is not ready"
+            description: "Fabric peer pod has been not-ready for more than 2 minutes. Cross-bank transfers will fail."
+
+        - alert: FabricOrdererDown
+          expr: |
+            kube_pod_status_ready{
+              condition="true",
+              namespace="fabric",
+              pod=~"orderer.*"
+            } == 0
+          for: 2m
+          labels:
+            severity: critical
+            component: fabric
+          annotations:
+            summary: "Fabric orderer {{ $labels.pod }} is not ready"
+            description: "The SOLO orderer is down — no new blocks can be committed."
+
+    - name: fabric.transactions
+      interval: 30s
+      rules:
+        - alert: FabricTransactionFailureSpike
+          expr: |
+            rate(transfer_error_count_total[5m]) > 0.1
+          for: 1m
+          labels:
+            severity: critical
+            component: fabric
+          annotations:
+            summary: "Fabric-backed transfer failure rate spiked"
+            description: "More than 0.1 transfer errors/sec over the last 5 minutes — Fabric connectivity may be degraded."

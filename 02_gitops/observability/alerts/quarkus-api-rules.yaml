@@ -1,0 +1,52 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: quarkus-api-alerts
+  namespace: observability
+  labels:
+    prometheus: kube-prometheus
+    role: alert-rules
+spec:
+  groups:
+    - name: quarkus-api.latency
+      interval: 30s
+      rules:
+        - alert: QuarkusApiHighLatency
+          expr: |
+            histogram_quantile(0.95,
+              rate(transfer_request_latency_seconds_bucket[5m])
+            ) > 0.2
+          for: 1m
+          labels:
+            severity: warning
+            app: quarkus-api
+          annotations:
+            summary: "Quarkus API p95 transfer latency exceeds 200ms"
+            description: "p95 transfer latency is {{ $value | humanizeDuration }} (threshold: 200ms)"
+
+    - name: quarkus-api.errors
+      interval: 30s
+      rules:
+        - alert: QuarkusApiHighErrorRate
+          expr: |
+            rate(transfer_error_count_total[5m])
+              /
+            rate(transfer_request_count_total[5m]) > 0.01
+          for: 2m
+          labels:
+            severity: critical
+            app: quarkus-api
+          annotations:
+            summary: "Quarkus API transfer error rate exceeds 1%"
+            description: "Error rate is {{ $value | humanizePercentage }} over the last 5 minutes"
+
+        - alert: QuarkusApiNoTraffic
+          expr: |
+            rate(transfer_request_count_total[10m]) == 0
+          for: 10m
+          labels:
+            severity: warning
+            app: quarkus-api
+          annotations:
+            summary: "Quarkus API has received no transfer requests in 10 minutes"
+            description: "The API may be unreachable or the UI is not routing traffic."

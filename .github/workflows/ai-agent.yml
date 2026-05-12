@@ -1,16 +1,16 @@
-name: quarkus-api CI
+name: ai-agent CI
 
 on:
   push:
     branches: [main]
     paths:
-      - "03_apps/quarkus-api/**"
-      - ".github/workflows/quarkus-api.yml"
+      - "06_ai/observability-agent/**"
+      - ".github/workflows/ai-agent.yml"
       - "versions.env"
   workflow_dispatch:
 
 env:
-  IMAGE: ghcr.io/samerhijazi/quarkus-api
+  IMAGE: ghcr.io/samerhijazi/shalm-ai-agent
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
@@ -26,17 +26,6 @@ jobs:
 
       - name: Load versions
         run: grep -v '^#' versions.env | grep -v '^$' >> $GITHUB_ENV
-
-      - name: Set up Java
-        uses: actions/setup-java@v4.7.0
-        with:
-          java-version: ${{ env.JAVA_VERSION }}
-          distribution: temurin
-          cache: maven
-
-      - name: Build with Maven
-        run: mvn package -DskipTests
-        working-directory: 03_apps/quarkus-api
 
       - name: Set up QEMU (multi-arch emulation)
         uses: docker/setup-qemu-action@v3.6.0
@@ -54,7 +43,7 @@ jobs:
       - name: Build and push Docker image (amd64 + arm64)
         uses: docker/build-push-action@v5.4.0
         with:
-          context: 03_apps/quarkus-api
+          context: 06_ai/observability-agent
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
@@ -64,13 +53,13 @@ jobs:
       - name: Patch deployment manifest
         run: |
           sed -i "s|image: ${{ env.IMAGE }}:.*|image: ${{ env.IMAGE }}:${{ github.sha }}|" \
-            02_gitops/quarkus-app/deployment.yaml
+            02_gitops/ai/deployment.yaml
 
       - name: Commit and push manifest update
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add 02_gitops/quarkus-app/deployment.yaml
-          git commit -m "ci: update quarkus-api image to ${{ github.sha }}"
+          git add 02_gitops/ai/deployment.yaml
+          git commit -m "ci: update ai-agent image to ${{ github.sha }}"
           git pull --rebase origin main
           git push origin main

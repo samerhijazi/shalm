@@ -41,6 +41,33 @@ alertmanager:
     nodePort: 30093
   alertmanagerSpec:
     storage: {}
+  config:
+    global:
+      resolve_timeout: 5m
+    inhibit_rules:
+      - source_matchers:
+          - severity = "critical"
+        target_matchers:
+          - severity = "warning"
+        equal: [alertname, namespace, pod]
+    route:
+      group_by: [alertname, namespace, severity]
+      group_wait: 30s
+      group_interval: 5m
+      repeat_interval: 12h
+      receiver: "null"
+      routes:
+        - matchers:
+            - alertname = "Watchdog"
+          receiver: "null"
+        - matchers:
+            - severity = "critical"
+          receiver: "null"
+        - matchers:
+            - severity = "warning"
+          receiver: "null"
+    receivers:
+      - name: "null"
 
 # Disable components not needed for this cluster size
 kubeEtcd:
