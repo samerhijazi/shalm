@@ -20,16 +20,22 @@ k8s-worker-02 (192.168.105.5)
 ## Current State (read this first in a new session)
 
 - **All phases complete (0–5, 8–10). Phases 6 and 7 skipped.**
-- Phases 0–5 are done
 - Phases 6 (Besu) and 7 (Identity Service) are **skipped** — network config kept in `04_blockchain/besu/` for reference
-- Quarkus API is live at `http://192.168.105.3:30800`
-- Quarkus UI is live at `http://192.168.105.3:30801`
 - All nodes are **arm64** — every custom Docker image must be built multi-arch (`linux/amd64,linux/arm64`)
-- The banking use case is: **ClientA (ACC-B1-001, Bank1/Org1) → ClientB (ACC-B2-001, Bank2/Org2)**
-- Phase 4 chaincode must be **Java** (`fabric-chaincode-java` SDK), **not Go, not Quarkus**
-- Phase 4 chaincode must use the same 4-account model as the API (ACC-B1-001, ACC-B1-002, ACC-B2-001, ACC-B2-002)
-- After Phase 4, the API will add `POST /fabric/transfer` and `GET /fabric/balance/{id}` endpoints
 - `kubectl logs` does NOT work on this cluster (kubelet port unreachable) — use debug pods instead (see rule 7)
+
+**Live services:**
+| Service     | URL                              |
+| ----------- | -------------------------------- |
+| Quarkus API | http://192.168.105.3:30800       |
+| Quarkus UI  | http://192.168.105.3:30801       |
+| AI Agent    | http://192.168.105.3:30810       |
+| Grafana     | http://192.168.105.3:30300       |
+| Prometheus  | http://192.168.105.3:30090       |
+| Alertmanager| http://192.168.105.3:30093       |
+
+**Post-deploy checklist (after first CI push of a new image):**
+- Go to `https://github.com/samerhijazi?tab=packages` and set the new package to **Public**
 
 ---
 

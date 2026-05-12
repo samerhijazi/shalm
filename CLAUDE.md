@@ -21,13 +21,15 @@ kubectl get applications -n argocd
 
 ## Platform URLs
 
-| Service     | URL                        | Credentials                |
-| ----------- | -------------------------- | -------------------------- |
-| ArgoCD      | http://192.168.105.3:30080 | admin / `GhPtA0-v7iFqnPkX` |
-| Grafana     | http://192.168.105.3:30300 | admin / `shalm-admin`      |
-| Prometheus  | http://192.168.105.3:30090 | —                          |
-| Quarkus API | http://192.168.105.3:30800 | —                          |
-| Quarkus UI  | http://192.168.105.3:30801 | —                          |
+| Service          | URL                        | Credentials                |
+| ---------------- | -------------------------- | -------------------------- |
+| ArgoCD           | http://192.168.105.3:30080 | admin / `GhPtA0-v7iFqnPkX` |
+| Grafana          | http://192.168.105.3:30300 | admin / `shalm-admin`      |
+| Prometheus       | http://192.168.105.3:30090 | —                          |
+| Alertmanager     | http://192.168.105.3:30093 | —                          |
+| Quarkus API      | http://192.168.105.3:30800 | —                          |
+| Quarkus UI       | http://192.168.105.3:30801 | —                          |
+| AI Agent         | http://192.168.105.3:30810 | —                          |
 
 ## Build & Run
 
@@ -85,11 +87,13 @@ kubectl annotate app <app-name> -n argocd argocd.argoproj.io/refresh=hard --over
 quarkus-ui (Qute, port 30801)
     └── REST client → quarkus-api (port 30800)
                           ├── in-memory account state (4 accounts, 2 banks)
-                          ├── /fabric/* → FabricGatewayService → Hyperledger Fabric peer (gRPC)
-                          └── /besu/*   → Hyperledger Besu RPC (Phase 6+)
+                          └── /fabric/* → FabricGatewayService → Hyperledger Fabric peer (gRPC)
 
 Observability: Prometheus + Grafana + Loki + Promtail (namespace: observability)
+               Alertmanager (routing + inhibit rules, null receiver by default)
+               PrometheusRules: latency, error rate, pod health, Fabric health
 Service mesh:  Istio (namespace: istio-system) — sidecar on fabric namespace
+AI agent:      FastAPI (namespace: ai, port 30810) — GET /summary (Loki), GET /anomalies (Prometheus)
 ```
 
 **Key constraint:** UI never communicates directly with Fabric or Besu — always through the API.
