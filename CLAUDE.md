@@ -30,6 +30,7 @@ kubectl get applications -n argocd
 | Quarkus API      | http://192.168.105.3:30800 | —                          |
 | Quarkus UI       | http://192.168.105.3:30801 | —                          |
 | AI Agent         | http://192.168.105.3:30810 | —                          |
+| Jaeger           | http://192.168.105.3:30686 | —                          |
 
 ## Build & Run
 
@@ -92,7 +93,9 @@ quarkus-ui (Qute, port 30801)
 Observability: Prometheus + Grafana + Loki + Promtail (namespace: observability)
                Alertmanager (routing + inhibit rules, null receiver by default)
                PrometheusRules: latency, error rate, pod health, Fabric health
+               Jaeger all-in-one (port 30686) — traces via Envoy/Zipkin protocol
 Service mesh:  Istio (namespace: istio-system) — sidecar on fabric namespace
+               Envoy emits traces to Jaeger:9411 (Zipkin); 100% sampling rate
 AI agent:      FastAPI (namespace: ai, port 30810) — GET /summary (Loki), GET /anomalies (Prometheus)
 ```
 

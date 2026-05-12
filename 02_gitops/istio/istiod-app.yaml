@@ -30,6 +30,15 @@ spec:
           defaultConfig:
             proxyMetadata: {}
           enablePrometheusMerge: true
+          extensionProviders:
+            - name: jaeger
+              zipkin:
+                service: jaeger.observability.svc.cluster.local
+                port: 9411
+                maxTagLength: 256
+          defaultProviders:
+            tracing:
+              - jaeger
   destination:
     server: https://kubernetes.default.svc
     namespace: istio-system

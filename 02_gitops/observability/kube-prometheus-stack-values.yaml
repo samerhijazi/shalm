@@ -18,6 +18,10 @@ grafana:
       url: http://loki.observability.svc.cluster.local:3100
       access: proxy
       isDefault: false
+    - name: Jaeger
+      type: jaeger
+      url: http://jaeger.observability.svc.cluster.local:16686
+      access: proxy
 
 prometheus:
   service:
