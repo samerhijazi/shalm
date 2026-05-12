@@ -108,9 +108,14 @@ AI agent:      FastAPI (namespace: ai, port 30810) — GET /summary (Loki), GET 
 
 ### Quarkus UI (`03_apps/quarkus-ui/`, namespace `quarkus-ui`)
 
-- Single Qute template: `dashboard.html` — bank-grouped balance view + transfer form + transaction history
+- Single Qute template: `dashboard.html` — 4 tabs:
+  - **Ledger** (default): table comparing API balance vs Fabric on-chain balance per account; Fabric column shows "N/A" when `FABRIC_ENABLED=false`
+  - **Transfers**: transfer form (From / To / Amount) at top; transaction history table below
+  - **Accounts**: bank-grouped balance cards (Bank1/Org1, Bank2/Org2)
+  - **Manage**: create account + delete account forms
 - `ApiClient` (MicroProfile REST Client) calls quarkus-api at `http://quarkus-api.quarkus-api.svc.cluster.local:8080`
 - `TransactionStore` holds last 20 transfers in memory (lost on pod restart)
+- `LedgerEntry` DTO combines `AccountInfo` (API) + Fabric balance string per account
 
 ### Fabric (`04_blockchain/fabric/`, namespace `fabric`)
 

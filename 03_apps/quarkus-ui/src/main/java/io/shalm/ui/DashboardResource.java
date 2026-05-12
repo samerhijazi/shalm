@@ -30,7 +30,7 @@ public class DashboardResource {
     @Produces(MediaType.TEXT_HTML)
     public TemplateInstance index() {
         List<AccountInfo> accounts = fetchAccounts();
-        return render(accounts, "", "", "accounts");
+        return render(accounts, "", "", "ledger");
     }
 
     @POST
@@ -73,7 +73,7 @@ public class DashboardResource {
         }
 
         accounts = fetchAccounts();
-        return Response.ok(render(accounts, message, error, "transfer")).build();
+        return Response.ok(render(accounts, message, error, "transfers")).build();
     }
 
     @POST
@@ -131,10 +131,26 @@ public class DashboardResource {
         return dashboard
                 .data("banks",        groupByBank(accounts))
                 .data("accounts",     accounts)
+                .data("ledger",       buildLedger(accounts))
                 .data("transactions", txStore.getAll())
                 .data("message",      message)
                 .data("error",        error)
                 .data("activeTab",    activeTab);
+    }
+
+    private List<LedgerEntry> buildLedger(List<AccountInfo> accounts) {
+        List<LedgerEntry> ledger = new ArrayList<>();
+        for (AccountInfo acc : accounts) {
+            String fabricBal;
+            try {
+                BalanceResponse fb = apiClient.getFabricBalance(acc.id);
+                fabricBal = String.valueOf(fb.balance);
+            } catch (Exception e) {
+                fabricBal = "N/A";
+            }
+            ledger.add(new LedgerEntry(acc, fabricBal));
+        }
+        return ledger;
     }
 
     private List<AccountInfo> fetchAccounts() {

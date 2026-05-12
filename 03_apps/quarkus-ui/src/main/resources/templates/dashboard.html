@@ -183,7 +183,7 @@
         .btn-danger  { background: var(--danger);  color: #fff; }
         .btn-danger:hover  { background: var(--danger-hover); }
 
-        /* ── Divider between manage cards ── */
+        /* ── Manage grid ── */
         .manage-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
 
         /* ── Warning note ── */
@@ -227,9 +227,12 @@
         .badge-invalid { background: #f1f5f9; color: #64748b; }
 
         .tx-id { font-family: monospace; font-size: 0.72rem; color: var(--muted); }
-        .cross-bank { font-size: 0.68rem; color: #d97706; margin-left: 0.3rem; }
         .sub { font-size: 0.7rem; font-family: monospace; color: var(--muted); }
         .empty { color: var(--muted); font-size: 0.875rem; text-align: center; padding: 2rem 0; }
+
+        /* ── Ledger-specific ── */
+        .fabric-na { color: var(--muted); font-style: italic; }
+        .ledger-amount { font-weight: 600; color: var(--primary); }
 
         @media (max-width: 640px) {
             .banks, .manage-grid { grid-template-columns: 1fr; }
@@ -255,41 +258,53 @@
 
     <!-- Tab Navigation -->
     <div class="tabs">
+        <button class="tab-btn" data-tab="ledger"    onclick="showTab('ledger')">Ledger</button>
+        <button class="tab-btn" data-tab="transfers" onclick="showTab('transfers')">Transfers</button>
         <button class="tab-btn" data-tab="accounts"  onclick="showTab('accounts')">Accounts</button>
-        <button class="tab-btn" data-tab="transfer"  onclick="showTab('transfer')">Transfer</button>
-        <button class="tab-btn" data-tab="history"   onclick="showTab('history')">History</button>
         <button class="tab-btn" data-tab="manage"    onclick="showTab('manage')">Manage</button>
     </div>
 
-    <!-- ── Tab: Accounts ── -->
-    <div id="tab-accounts" class="tab-content">
-        <p class="section-label">Accounts by Bank</p>
-        <div class="banks">
-            {#for bankEntry in banks.entrySet()}
-            <div class="bank-section">
-                <div class="bank-header">
-                    <span class="bank-name">{bankEntry.key}</span>
-                    <span class="org-tag">Org{bankEntry_count}</span>
-                </div>
-                {#for acc in bankEntry.value}
-                <div class="account-row">
-                    <div class="account-info">
-                        <div class="client">{acc.owner}</div>
-                        <div class="acc-id">{acc.id}</div>
-                    </div>
-                    <div class="account-balance">
-                        <div class="amount">{acc.balance}</div>
-                        <div class="unit">tokens</div>
-                    </div>
-                </div>
-                {/for}
+    <!-- ── Tab: Ledger ── -->
+    <div id="tab-ledger" class="tab-content">
+        <div class="card">
+            <h2>Ledger</h2>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Account</th>
+                            <th>Owner</th>
+                            <th>Bank</th>
+                            <th>API Balance</th>
+                            <th>Fabric Balance</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {#for entry in ledger}
+                        <tr>
+                            <td class="tx-id">{entry.id}</td>
+                            <td>{entry.owner}</td>
+                            <td>{entry.bank}</td>
+                            <td class="ledger-amount">{entry.apiBalance} tkn</td>
+                            <td>
+                                {#if entry.fabricBalance == "N/A"}
+                                <span class="fabric-na">N/A</span>
+                                {#else}
+                                <span class="ledger-amount">{entry.fabricBalance} tkn</span>
+                                {/if}
+                            </td>
+                        </tr>
+                        {/for}
+                    </tbody>
+                </table>
             </div>
-            {/for}
         </div>
     </div>
 
-    <!-- ── Tab: Transfer ── -->
-    <div id="tab-transfer" class="tab-content">
+    <!-- ── Tab: Transfers ── -->
+    <div id="tab-transfers" class="tab-content">
+
+        <!-- Transfer form -->
         <div class="card">
             <h2>Transfer Tokens</h2>
             <form method="POST" action="/transfer">
@@ -318,10 +333,8 @@
                 </div>
             </form>
         </div>
-    </div>
 
-    <!-- ── Tab: History ── -->
-    <div id="tab-history" class="tab-content">
+        <!-- Transaction history -->
         <div class="card">
             <h2>Transaction History</h2>
             {#if transactions.isEmpty()}
@@ -360,6 +373,34 @@
                 </table>
             </div>
             {/if}
+        </div>
+
+    </div>
+
+    <!-- ── Tab: Accounts ── -->
+    <div id="tab-accounts" class="tab-content">
+        <p class="section-label">Accounts by Bank</p>
+        <div class="banks">
+            {#for bankEntry in banks.entrySet()}
+            <div class="bank-section">
+                <div class="bank-header">
+                    <span class="bank-name">{bankEntry.key}</span>
+                    <span class="org-tag">Org{bankEntry_count}</span>
+                </div>
+                {#for acc in bankEntry.value}
+                <div class="account-row">
+                    <div class="account-info">
+                        <div class="client">{acc.owner}</div>
+                        <div class="acc-id">{acc.id}</div>
+                    </div>
+                    <div class="account-balance">
+                        <div class="amount">{acc.balance}</div>
+                        <div class="unit">tokens</div>
+                    </div>
+                </div>
+                {/for}
+            </div>
+            {/for}
         </div>
     </div>
 

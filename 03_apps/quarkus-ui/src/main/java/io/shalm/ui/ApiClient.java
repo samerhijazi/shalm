@@ -21,6 +21,11 @@ public interface ApiClient {
     @Produces(MediaType.APPLICATION_JSON)
     BalanceResponse getBalance(@PathParam("id") String id);
 
+    @GET
+    @Path("/fabric/balance/{id}")
+    @Produces(MediaType.APPLICATION_JSON)
+    BalanceResponse getFabricBalance(@PathParam("id") String id);
+
     @POST
     @Path("/transfer")
     @Consumes(MediaType.APPLICATION_JSON)
