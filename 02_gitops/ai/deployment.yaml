@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: ai-observability-agent
-          image: ghcr.io/samerhijazi/shalm-ai-agent:latest
+          image: ghcr.io/samerhijazi/shalm-ai-agent:adf6f7f5c698c463c7517735e7f753c281656326
           ports:
             - containerPort: 8000
           env:
