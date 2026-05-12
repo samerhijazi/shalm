@@ -6,6 +6,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Read `03_implementation-status.md` first — it has the current phase, what's done, and the live rules that apply to every phase going forward.
 
+## Documentation Rule (mandatory)
+
+After **any** change to the platform — new feature, bug fix, config change, new service, phase completion, or infrastructure update — you **must** update both:
+
+1. **`CLAUDE.md`** — keep Platform URLs, Architecture, Known Issues, and component descriptions current
+2. **`03_implementation-status.md`** — update the phase table, Current State section, and Live Services table
+
+Do not commit without updating these two files. They are the single source of truth for future sessions.
+
 ## Cluster & Platform
 
 - **Cluster:** 3 Lima VMs — master `192.168.105.3`, workers `192.168.105.4 / .5`
