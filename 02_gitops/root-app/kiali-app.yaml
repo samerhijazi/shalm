@@ -1,0 +1,49 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kiali
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.io
+spec:
+  project: default
+  source:
+    repoURL: https://kiali.org/helm-charts
+    chart: kiali-server
+    targetRevision: "1.89.7"
+    helm:
+      values: |
+        auth:
+          strategy: anonymous
+
+        deployment:
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+
+        external_services:
+          prometheus:
+            url: "http://kube-prometheus-stack-prometheus.observability.svc.cluster.local:9090"
+          tracing:
+            enabled: true
+            provider: "jaeger"
+            in_cluster_url: "http://jaeger.observability.svc.cluster.local:16686"
+            use_grpc: false
+          grafana:
+            enabled: true
+            in_cluster_url: "http://kube-prometheus-stack-grafana.observability.svc.cluster.local:80"
+            url: "http://192.168.105.3:30300"
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: istio-system
+  syncPolicy:
+    automated:
+      selfHeal: true
+      prune: true
+    syncOptions:
+      - CreateNamespace=true

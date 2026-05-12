@@ -25,14 +25,16 @@ k8s-worker-02 (192.168.105.5)
 - `kubectl logs` does NOT work on this cluster (kubelet port unreachable) — use debug pods instead (see rule 7)
 
 **Live services:**
-| Service     | URL                              |
-| ----------- | -------------------------------- |
-| Quarkus API | http://192.168.105.3:30800       |
-| Quarkus UI  | http://192.168.105.3:30801       |
-| AI Agent    | http://192.168.105.3:30810       |
-| Grafana     | http://192.168.105.3:30300       |
-| Prometheus  | http://192.168.105.3:30090       |
-| Alertmanager| http://192.168.105.3:30093       |
+| Service      | URL                              |
+| ------------ | -------------------------------- |
+| Quarkus API  | http://192.168.105.3:30800       |
+| Quarkus UI   | http://192.168.105.3:30801       |
+| AI Agent     | http://192.168.105.3:30810       |
+| Grafana      | http://192.168.105.3:30300       |
+| Prometheus   | http://192.168.105.3:30090       |
+| Alertmanager | http://192.168.105.3:30093       |
+| Jaeger       | http://192.168.105.3:30686       |
+| Kiali        | http://192.168.105.3:30088       |
 
 **Post-deploy checklist (after first CI push of a new image):**
 - Go to `https://github.com/samerhijazi?tab=packages` and set the new package to **Public**
