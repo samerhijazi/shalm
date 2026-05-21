@@ -2,6 +2,7 @@ package io.shalm.ui;
 
 import io.quarkus.qute.Template;
 import io.quarkus.qute.TemplateInstance;
+import io.smallrye.common.annotation.Blocking;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
@@ -14,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+@Blocking
 @Path("/")
 public class DashboardResource {
 
@@ -130,9 +132,7 @@ public class DashboardResource {
                                     String message, String error, String activeTab) {
         String apiError = "";
         if (accounts.isEmpty() && error.isEmpty()) {
-            apiError = lastFetchError.isEmpty()
-                    ? "Cannot reach the API server — data may be incomplete."
-                    : lastFetchError;
+            apiError = "Cannot reach the API server — data may be incomplete.";
         }
         String effectiveError = error.isEmpty() ? apiError : error;
 
@@ -161,15 +161,10 @@ public class DashboardResource {
         return ledger;
     }
 
-    private String lastFetchError = "";
-
     private List<AccountInfo> fetchAccounts() {
         try {
-            List<AccountInfo> result = apiClient.getAllAccounts();
-            lastFetchError = "";
-            return result;
+            return apiClient.getAllAccounts();
         } catch (Exception e) {
-            lastFetchError = e.getClass().getName() + ": " + e.getMessage();
             return List.of();
         }
     }
