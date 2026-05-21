@@ -30,7 +30,7 @@ public class DashboardResource {
     @Produces(MediaType.TEXT_HTML)
     public TemplateInstance index() {
         List<AccountInfo> accounts = fetchAccounts();
-        return render(accounts, "", "", "ledger");
+        return render(accounts, "", "", "worldstate");
     }
 
     @POST
@@ -128,13 +128,19 @@ public class DashboardResource {
 
     private TemplateInstance render(List<AccountInfo> accounts,
                                     String message, String error, String activeTab) {
+        String apiError = "";
+        if (accounts.isEmpty() && error.isEmpty()) {
+            apiError = "Cannot reach the API server — data may be incomplete.";
+        }
+        String effectiveError = error.isEmpty() ? apiError : error;
+
         return dashboard
                 .data("banks",        groupByBank(accounts))
                 .data("accounts",     accounts)
                 .data("ledger",       buildLedger(accounts))
                 .data("transactions", txStore.getAll())
                 .data("message",      message)
-                .data("error",        error)
+                .data("error",        effectiveError)
                 .data("activeTab",    activeTab);
     }
 

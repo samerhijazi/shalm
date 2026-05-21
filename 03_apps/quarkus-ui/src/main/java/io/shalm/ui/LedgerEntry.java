@@ -14,4 +14,8 @@ public class LedgerEntry {
         this.apiBalance = acc.balance;
         this.fabricBalance = fabricBalance;
     }
+
+    public boolean isSynced() {
+        return !fabricBalance.equals("N/A") && fabricBalance.equals(String.valueOf(apiBalance));
+    }
 }

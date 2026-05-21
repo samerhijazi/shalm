@@ -8,12 +8,13 @@ Read `03_implementation-status.md` first — it has the current phase, what's do
 
 ## Documentation Rule (mandatory)
 
-After **any** change to the platform — new feature, bug fix, config change, new service, phase completion, or infrastructure update — you **must** update both:
+After **any** change to the platform — new feature, bug fix, config change, new service, phase completion, or infrastructure update — you **must** update all three:
 
 1. **`CLAUDE.md`** — keep Platform URLs, Architecture, Known Issues, and component descriptions current
 2. **`03_implementation-status.md`** — update the phase table, Current State section, and Live Services table
+3. **`README.md`** — keep Live Services table, Phase Status table, and Architecture summary in sync with the above two files
 
-Do not commit without updating these two files. They are the single source of truth for future sessions.
+Do not commit without updating these three files. They are the single source of truth for future sessions.
 
 ## Cluster & Platform
 

@@ -54,6 +54,7 @@
         }
         .alert-success { background: var(--success-bg); border-color: var(--success-border); color: var(--success-text); }
         .alert-error   { background: var(--error-bg);   border-color: var(--error-border);   color: var(--error-text); }
+        .alert-warning { background: #fef3c7; border-color: #fcd34d; color: #92400e; }
 
         /* ── Tabs ── */
         .tabs {
@@ -234,6 +235,26 @@
         .fabric-na { color: var(--muted); font-style: italic; }
         .ledger-amount { font-weight: 600; color: var(--primary); }
 
+        /* ── Sync button ── */
+        .btn-sync {
+            margin-left: auto;
+            background: var(--primary-light);
+            color: var(--primary);
+            border: 1px solid var(--primary);
+            border-radius: 6px;
+            padding: 0.4rem 1rem;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            white-space: nowrap;
+            transition: background 0.12s, color 0.12s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+        }
+        .btn-sync:hover { background: var(--primary); color: #fff; }
+
         @media (max-width: 640px) {
             .banks, .manage-grid { grid-template-columns: 1fr; }
             .form-grid { grid-template-columns: 1fr; }
@@ -245,6 +266,7 @@
 <header>
     <h1>Shalm</h1>
     <span class="tagline">Cross-Bank Transfer Platform</span>
+    <a href="/" class="btn-sync">&#8635; Sync with API</a>
 </header>
 
 <main>
@@ -258,16 +280,17 @@
 
     <!-- Tab Navigation -->
     <div class="tabs">
-        <button class="tab-btn" data-tab="ledger"    onclick="showTab('ledger')">Ledger</button>
-        <button class="tab-btn" data-tab="transfers" onclick="showTab('transfers')">Transfers</button>
-        <button class="tab-btn" data-tab="accounts"  onclick="showTab('accounts')">Accounts</button>
-        <button class="tab-btn" data-tab="manage"    onclick="showTab('manage')">Manage</button>
+        <button class="tab-btn" data-tab="worldstate"  onclick="showTab('worldstate')">World State</button>
+        <button class="tab-btn" data-tab="blockchain"  onclick="showTab('blockchain')">Blockchain</button>
+        <button class="tab-btn" data-tab="transfers"   onclick="showTab('transfers')">Transfers</button>
+        <button class="tab-btn" data-tab="accounts"    onclick="showTab('accounts')">Accounts</button>
+        <button class="tab-btn" data-tab="manage"      onclick="showTab('manage')">Manage Accounts</button>
     </div>
 
-    <!-- ── Tab: Ledger ── -->
-    <div id="tab-ledger" class="tab-content">
+    <!-- ── Tab: World State ── -->
+    <div id="tab-worldstate" class="tab-content">
         <div class="card">
-            <h2>Ledger</h2>
+            <h2>World State — API vs Fabric</h2>
             <div class="table-wrap">
                 <table>
                     <thead>
@@ -291,6 +314,54 @@
                                 <span class="fabric-na">N/A</span>
                                 {#else}
                                 <span class="ledger-amount">{entry.fabricBalance} tkn</span>
+                                {/if}
+                            </td>
+                        </tr>
+                        {/for}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Tab: Blockchain ── -->
+    <div id="tab-blockchain" class="tab-content">
+        <div class="card">
+            <h2>Blockchain — Hyperledger Fabric Ledger</h2>
+            {#if ledger.isEmpty() || (ledger.size() > 0 && ledger[0].fabricBalance == "N/A")}
+            <div class="alert alert-error">Fabric ledger not available (FABRIC_ENABLED=false or not deployed)</div>
+            {/if}
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Account ID</th>
+                            <th>Owner</th>
+                            <th>Bank</th>
+                            <th>Fabric Balance</th>
+                            <th>Sync Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {#for entry in ledger}
+                        <tr>
+                            <td class="tx-id">{entry.id}</td>
+                            <td>{entry.owner}</td>
+                            <td>{entry.bank}</td>
+                            <td>
+                                {#if entry.fabricBalance == "N/A"}
+                                <span class="fabric-na">N/A</span>
+                                {#else}
+                                <span class="ledger-amount">{entry.fabricBalance} tkn</span>
+                                {/if}
+                            </td>
+                            <td>
+                                {#if entry.fabricBalance == "N/A"}
+                                <span class="badge badge-invalid">No Fabric</span>
+                                {#else if entry.isSynced}
+                                <span class="badge badge-success">✓ sync</span>
+                                {#else}
+                                <span class="badge badge-failed">✗ diverged</span>
                                 {/if}
                             </td>
                         </tr>
