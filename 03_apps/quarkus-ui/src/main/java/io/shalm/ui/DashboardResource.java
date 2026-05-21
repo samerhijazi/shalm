@@ -130,7 +130,9 @@ public class DashboardResource {
                                     String message, String error, String activeTab) {
         String apiError = "";
         if (accounts.isEmpty() && error.isEmpty()) {
-            apiError = "Cannot reach the API server — data may be incomplete.";
+            apiError = lastFetchError.isEmpty()
+                    ? "Cannot reach the API server — data may be incomplete."
+                    : lastFetchError;
         }
         String effectiveError = error.isEmpty() ? apiError : error;
 
@@ -159,10 +161,15 @@ public class DashboardResource {
         return ledger;
     }
 
+    private String lastFetchError = "";
+
     private List<AccountInfo> fetchAccounts() {
         try {
-            return apiClient.getAllAccounts();
+            List<AccountInfo> result = apiClient.getAllAccounts();
+            lastFetchError = "";
+            return result;
         } catch (Exception e) {
+            lastFetchError = e.getClass().getName() + ": " + e.getMessage();
             return List.of();
         }
     }
