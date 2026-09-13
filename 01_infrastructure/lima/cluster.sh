@@ -5,16 +5,20 @@ VMS=(k8s-master k8s-worker-01 k8s-worker-02)
 CMD="${1:-}"
 
 usage() {
-  echo "Usage: $0 {start|stop|delete|prune|restart}"
+  echo "Usage: $0 {create|start|stop|delete|prune|restart}"
   exit 1
 }
 
 case "$CMD" in
-  start)
-    echo "==> Starting VMs..."
+  create)
+    echo "==> Creating VMs..."
     limactl start --tty=false k8s-master.yaml
     limactl start --tty=false k8s-worker-01.yaml
     limactl start --tty=false k8s-worker-02.yaml
+    ;;
+  start)
+    echo "==> Starting VMs..."
+    for vm in "${VMS[@]}"; do limactl start "$vm"; done
     ;;
   stop)
     echo "==> Stopping VMs..."
