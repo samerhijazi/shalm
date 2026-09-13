@@ -115,6 +115,10 @@ cd 03_apps/quarkus-ui && mvn package -DskipTests
 # Run locally in dev mode
 mvn quarkus:dev
 
+# Run tests (also runs automatically in CI before every image build)
+cd 03_apps/quarkus-api && mvn test
+cd 03_apps/quarkus-ui && mvn test
+
 # Check cluster state
 kubectl get pods -A
 kubectl get applications -n argocd

@@ -117,17 +117,21 @@ AI agent:      FastAPI (namespace: ai, port 30810) — GET /summary (Loki), GET 
 
 - Jakarta REST 3.0 resources: `AccountsResource`, `BalanceResource`, `TransferResource`, `FabricResource`
 - `AccountService` holds in-memory state; seeded with 4 accounts (ACC-B1-001/002, ACC-B2-001/002)
-- `FabricGatewayService` wraps Fabric Gateway SDK — enabled via `FABRIC_ENABLED=true` env var (off by default)
+- `FabricGatewayService` wraps Fabric Gateway SDK — enabled via `FABRIC_ENABLED` env var (`true` in `02_gitops/quarkus-app/deployment.yaml`); requires the `fabric-org1-admin` secret to exist in the `quarkus-api` namespace (see Known Issues)
+- `GET /tests` — serves the JSON test-result summary baked into the image at CI build time (read by the quarkus-ui "Tests" dashboard tab)
 - Micrometer metrics: `transfer_request_count`, `transfer_request_latency`, `transfer_error_count`
 - Structured JSON logs with MDC fields: `transaction_id`, `from_account`, `to_account`, `amount`, `status`
+- Tests: `src/test/java/io/shalm/` — `AccountServiceTest` (unit) + `@QuarkusTest`/REST-assured resource tests; run in CI before every image build
 
 ### Quarkus UI (`03_apps/quarkus-ui/`, namespace `quarkus-ui`)
 
-- Single Qute template: `dashboard.html` — 4 tabs:
-  - **Ledger** (default): table comparing API balance vs Fabric on-chain balance per account; Fabric column shows "N/A" when `FABRIC_ENABLED=false`
+- Single Qute template: `dashboard.html` — 6 tabs:
+  - **World State** (default): table comparing API balance vs Fabric on-chain balance per account; Fabric column shows "N/A" only if `FABRIC_ENABLED=false` or the peer is unreachable
+  - **Blockchain**: Fabric-only ledger view + per-account sync status badge
   - **Transfers**: transfer form (From / To / Amount) at top; transaction history table below
   - **Accounts**: bank-grouped balance cards (Bank1/Org1, Bank2/Org2)
   - **Manage**: create account + delete account forms
+  - **Tests**: pass/fail summary cards for quarkus-api (fetched live via `ApiClient.getApiTestResults()`) and quarkus-ui (its own bundled `test-results.json`)
 - `ApiClient` (MicroProfile REST Client) calls quarkus-api at `http://quarkus-api.quarkus-api.svc.cluster.local:8080`
 - `TransactionStore` holds last 20 transfers in memory (lost on pod restart)
 - `LedgerEntry` DTO combines `AccountInfo` (API) + Fabric balance string per account
@@ -158,3 +162,24 @@ kubectl rollout restart daemonset/calico-node -n kube-system
 **Jakarta REST 3.0** — `Response.Status.UNPROCESSABLE_ENTITY` does not exist. Use `Response.status(422)`. Verify any status constant exists before using it.
 
 **PAT scope** — pushing `.github/workflows/` files requires a PAT with `workflow` scope.
+
+**`kubectl exec`/`kubectl logs` both go through the same broken kubelet path** — `kubectl exec` fails with `unable to upgrade connection: pod does not exist` even when the pod is `Running`. To read a live pod's actual logs, query Loki through Grafana's already-exposed datasource proxy instead of adding new cluster exposure:
+
+```bash
+curl -u admin:shalm-admin \
+  'http://192.168.105.3:30300/api/datasources/proxy/uid/P8E80F9AEF21F6940/loki/api/v1/query_range' \
+  --data-urlencode 'query={app="quarkus-api", container="quarkus-api"}' \
+  --data-urlencode 'start=<start-ns>' --data-urlencode 'end=<end-ns>'
+```
+
+Find the Loki datasource UID via `GET /api/datasources`. Valid Loki labels here are `app`, `container`, `pod`, `node`, `service_name`, `stream` (no `namespace` label).
+
+**Fabric client secret is namespace-scoped** — `create-secrets.sh` originally only created `fabric-org1-admin` in the `fabric` namespace, but `quarkus-api`'s Deployment (namespace `quarkus-api`) mounts it too, and Secrets can't be shared across namespaces. The script now creates it in both; if Fabric was set up before this fix, copy it manually:
+
+```bash
+kubectl get secret fabric-org1-admin -n fabric -o json \
+  | python3 -c "import json,sys; d=json.load(sys.stdin); d['metadata']={'name':'fabric-org1-admin','namespace':'quarkus-api'}; print(json.dumps(d))" \
+  | kubectl apply -f -
+```
+
+**ArgoCD auto-sync reverts manual `kubectl apply` / `kubectl edit` on any GitOps-managed resource** — a live edit that isn't pushed to `origin/main` gets silently reverted on the next reconcile (visible as a Synced→OutOfSync→Synced / Healthy→Degraded cycle in `kubectl get applications -n argocd`). Always commit + push the manifest change instead of patching the live object directly.

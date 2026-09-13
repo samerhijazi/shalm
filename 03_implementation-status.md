@@ -23,6 +23,8 @@ k8s-worker-02 (192.168.105.5)
 - Phases 6 (Besu) and 7 (Identity Service) are **skipped** — network config kept in `04_blockchain/besu/` for reference
 - All nodes are **arm64** — every custom Docker image must be built multi-arch (`linux/amd64,linux/arm64`)
 - `kubectl logs` does NOT work on this cluster (kubelet port unreachable) — use debug pods instead (see rule 7)
+- `kubectl exec` does NOT work either (same cause) — read logs via Loki through Grafana's proxy (see rule 10c)
+- quarkus-api and quarkus-ui both have real test suites (`mvn test`) run as a CI gate; results are summarized into a "Tests" tab in the quarkus-ui dashboard
 
 **Live services:**
 | Service      | URL                              |
@@ -131,6 +133,47 @@ kubectl rollout status daemonset/calico-node -n kube-system
 "Process completed with exit code 1" with no useful output.
 **Rule:** Use `mvn package -DskipTests` (no `-q`) in all CI workflows.
 
+### 10a. Fabric identity secret must exist in the consuming namespace too
+
+`quarkus-api`'s Deployment mounts `fabric-org1-admin` from its own namespace
+(`quarkus-api`), not from `fabric`. Secrets are namespace-scoped — creating
+it only in `fabric` (where the peers/orderer run) leaves the volume mount
+empty (it's `optional: true`, so the pod starts anyway, silently disabled).
+**Rule:** `create-secrets.sh` creates `fabric-org1-admin` in both `fabric`
+and `quarkus-api` namespaces. If Fabric was set up before this fix, copy it:
+
+```bash
+kubectl get secret fabric-org1-admin -n fabric -o json \
+  | python3 -c "import json,sys; d=json.load(sys.stdin); d['metadata']={'name':'fabric-org1-admin','namespace':'quarkus-api'}; print(json.dumps(d))" \
+  | kubectl apply -f -
+```
+
+### 10b. ArgoCD reverts un-pushed manual cluster edits
+
+Any resource under `02_gitops/` is reconciled from `origin/main`, not from
+what's live in the cluster. `kubectl apply`/`kubectl edit` on a GitOps-managed
+resource works for a few seconds, then auto-sync reverts it back to match
+git — visible as a repeating Synced→OutOfSync→Synced / Healthy→Degraded
+cycle in `kubectl get applications -n argocd`.
+**Rule:** commit and push the manifest change; never rely on a live patch.
+
+### 10c. `kubectl exec` is broken too, not just `kubectl logs`
+
+Same root cause (kubelet port unreachable) — `kubectl exec` fails with
+`unable to upgrade connection: pod does not exist` even on a `Running` pod.
+**Rule:** read real container logs via Loki through Grafana's exposed
+datasource proxy instead of adding new cluster exposure:
+
+```bash
+curl -u admin:shalm-admin \
+  'http://192.168.105.3:30300/api/datasources/proxy/uid/<loki-uid>/loki/api/v1/query_range' \
+  --data-urlencode 'query={app="quarkus-api", container="quarkus-api"}' \
+  --data-urlencode 'start=<start-ns>' --data-urlencode 'end=<end-ns>'
+```
+
+Get `<loki-uid>` from `GET /api/datasources`. Labels available: `app`,
+`container`, `pod`, `node`, `service_name`, `stream` (no `namespace` label).
+
 ### 10. Load `versions.env` as the first CI step
 
 All future workflows must load the central version file before any other step:
@@ -198,7 +241,7 @@ shalm-platform/
 | 1   | Observability Stack              | `[x] done`    | Prometheus, Grafana, Loki+Promtail, dashboards                    |
 | 2   | Quarkus API                      | `[x] done`    | REST API, in-memory state, metrics, structured logs, GHCR, GitOps |
 | 3   | Quarkus UI                       | `[x] done`    | Qute templates, balance/tx views, wired to API, GitOps            |
-| 4   | Hyperledger Fabric               | `[x] done`    | 2 orgs, SOLO orderer, CCAAS Java chaincode, /fabric/* endpoints   |
+| 4   | Hyperledger Fabric               | `[x] done`    | 2 orgs, SOLO orderer, CCAAS Java chaincode, /fabric/* endpoints — FABRIC_ENABLED=true, connected |
 | 5   | Istio                            | `[x] done`    | Sidecar injection, ingress gateway, Fabric traffic routing        |
 | 6   | Hyperledger Besu                 | `[s] skipped` | Network config kept in `04_blockchain/besu/`; no K8s manifests   |
 | 7   | Identity Service                 | `[s] skipped` | No files generated                                                |

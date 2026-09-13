@@ -24,7 +24,7 @@ spec:
             # Phase 4: set FABRIC_ENABLED=true after running create-secrets.sh
             # and patching in the fabric-org1-admin secret volume below.
             - name: FABRIC_ENABLED
-              value: "false"
+              value: "true"
           readinessProbe:
             httpGet:
               path: /health/ready

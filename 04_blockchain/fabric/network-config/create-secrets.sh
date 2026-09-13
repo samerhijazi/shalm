@@ -86,6 +86,15 @@ apply_secret "fabric-org1-admin" \
   --from-file=admin-cert.pem="$(ls "$ORG1_ADMIN/signcerts/"*.pem | head -1)" \
   --from-file=admin-key.pem="$ORG1_ADMIN/keystore/priv_sk"
 
+# quarkus-api (namespace "quarkus-api") mounts this same identity at
+# /fabric-crypto -- it must exist there too, not just in "$NS" (fabric),
+# since Secrets are namespace-scoped and can't be shared across namespaces.
+kubectl create secret generic fabric-org1-admin \
+  --from-file=admin-cert.pem="$(ls "$ORG1_ADMIN/signcerts/"*.pem | head -1)" \
+  --from-file=admin-key.pem="$ORG1_ADMIN/keystore/priv_sk" \
+  -n quarkus-api \
+  --dry-run=client -o yaml | kubectl apply -f -
+
 ORG2_ADMIN="$ORG2_BASE/users/Admin@org2.shalm.local/msp"
 apply_secret "fabric-org2-admin-msp" --from-file=config.yaml="$ORG2_ADMIN/config.yaml"
 create_msp_subdir_secrets "fabric-org2-admin-msp" "$ORG2_ADMIN"
