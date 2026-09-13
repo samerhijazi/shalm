@@ -132,11 +132,12 @@ spec:
               export CORE_PEER_MSPCONFIGPATH=/org1-admin-msp
               peer lifecycle chaincode install /tmp/bank-transfer.tar.gz 2>&1 || true
 
-              PACKAGE_ID=$(peer lifecycle chaincode queryinstalled 2>&1 \
-                | grep "bank-transfer_1.0" \
-                | awk -F'Package ID: ' '{print $2}' \
-                | awk -F',' '{print $1}' \
-                | tr -d ' ')
+              # Deterministic packaging (tar --mtime='@0') means the package ID is
+              # just the label + sha256 of the package tarball -- compute it
+              # directly instead of grepping `queryinstalled`, whose output
+              # accumulates one line per historical install and previously made
+              # $PACKAGE_ID a multi-line garbage string matching nothing real.
+              PACKAGE_ID="bank-transfer_1.0:$(sha256sum /tmp/bank-transfer.tar.gz | awk '{print $1}')"
               echo "Package ID: $PACKAGE_ID"
 
               # ── install on peer0-org2 ─────────────────────────────────────────
@@ -155,7 +156,7 @@ spec:
                 --channelID mychannel \
                 --name bank-transfer \
                 --version 1.0 \
-                --sequence 3 \
+                --sequence 4 \
                 --package-id "$PACKAGE_ID" \
                 -o orderer.fabric.svc.cluster.local:7050 \
                 --tls=false 2>&1 || echo "Org1 approval may already exist"
@@ -169,7 +170,7 @@ spec:
                 --channelID mychannel \
                 --name bank-transfer \
                 --version 1.0 \
-                --sequence 3 \
+                --sequence 4 \
                 --package-id "$PACKAGE_ID" \
                 -o orderer.fabric.svc.cluster.local:7050 \
                 --tls=false 2>&1 || echo "Org2 approval may already exist"
@@ -183,7 +184,7 @@ spec:
                 --channelID mychannel \
                 --name bank-transfer \
                 --version 1.0 \
-                --sequence 3 \
+                --sequence 4 \
                 --tls=false \
                 --output json 2>&1
 
@@ -193,7 +194,7 @@ spec:
                 --channelID mychannel \
                 --name bank-transfer \
                 --version 1.0 \
-                --sequence 3 \
+                --sequence 4 \
                 --peerAddresses peer0-org1.fabric.svc.cluster.local:7051 \
                 --peerAddresses peer0-org2.fabric.svc.cluster.local:7051 \
                 -o orderer.fabric.svc.cluster.local:7050 \
