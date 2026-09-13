@@ -12,13 +12,18 @@ public class BankChaincode extends ChaincodeBase {
     private final ObjectMapper mapper = new ObjectMapper();
 
     public BankChaincode(String[] args) {
-        // NettyChaincodeServer's constructor calls validateOptions(), which reads
-        // chaincodeConfig -- that field is only populated by processEnvironmentOptions()
-        // + processCommandLineOptions(args), the same two calls start(args) itself makes
-        // before ever touching the config. Replicate that order here since we construct
-        // the server manually instead of calling the inherited start(args).
+        // NettyChaincodeServer's constructor calls validateOptions(), and later, every
+        // incoming peer connection (ChatChaincodeWithPeer.connect -> connectToPeer ->
+        // newChannelBuilder -> getMaxInboundMessageSize) reads `this.props`. That field
+        // is normally populated by getChaincodeConfig(), which start(args) calls
+        // internally after processEnvironmentOptions()/processCommandLineOptions(args) --
+        // but start(args) is never called here since we construct the server manually.
+        // Skipping any one of these three leaves `props` null and every real invocation
+        // fails with "Chaincode config not available", even though the server itself
+        // starts up and listens just fine.
         processEnvironmentOptions();
         processCommandLineOptions(args);
+        getChaincodeConfig();
     }
 
     @Override
