@@ -133,6 +133,28 @@ kubectl rollout status daemonset/calico-node -n kube-system
 "Process completed with exit code 1" with no useful output.
 **Rule:** Use `mvn package -DskipTests` (no `-q`) in all CI workflows.
 
+### 10a0. No default StorageClass — install local-path-provisioner first
+
+This cluster has no dynamic storage provisioner out of the box (`kubectl get
+storageclass` returns nothing). Any workload needing a PVC — e.g. Fabric
+peer/orderer ledger storage — will stay `Pending` forever without one.
+**Rule:** `01_infrastructure/base/local-path-provisioner.yaml` (upstream
+rancher/local-path-provisioner v0.0.30, applied once via `kubectl apply`,
+not ArgoCD-managed) provides the `local-path` StorageClass used by
+`02_gitops/fabric/*/pvc.yaml`.
+
+### 10a1. fabric-setup Job needs the FULL MSP directory mounted, not just config.yaml
+
+The job originally mounted only `fabric-org1-admin-msp`/`fabric-org2-admin-msp`
+(which contain just `config.yaml`) directly at `/org1-admin-msp` /
+`/org2-admin-msp`. The `cacerts/`, `signcerts/`, `keystore/`, and
+`tlscacerts/` subdirectories were never mounted, so the peer CLI's BCCSP
+tried to `mkdir keystore/` on what it thought was a normal MSP dir and
+failed (`read-only file system`) — meaning `mychannel` was never actually
+created. **Rule:** mount all four `fabric-org{1,2}-admin-msp-{cacerts,
+signcerts,keystore,tlscacerts}` secrets as subdirectories alongside the
+base `config.yaml` mount (see `02_gitops/fabric/setup-job.yaml`).
+
 ### 10a. Fabric identity secret must exist in the consuming namespace too
 
 `quarkus-api`'s Deployment mounts `fabric-org1-admin` from its own namespace
@@ -241,7 +263,7 @@ shalm-platform/
 | 1   | Observability Stack              | `[x] done`    | Prometheus, Grafana, Loki+Promtail, dashboards                    |
 | 2   | Quarkus API                      | `[x] done`    | REST API, in-memory state, metrics, structured logs, GHCR, GitOps |
 | 3   | Quarkus UI                       | `[x] done`    | Qute templates, balance/tx views, wired to API, GitOps            |
-| 4   | Hyperledger Fabric               | `[x] done`    | 2 orgs, SOLO orderer, CCAAS Java chaincode, /fabric/* endpoints — FABRIC_ENABLED=true, connected |
+| 4   | Hyperledger Fabric               | `[x] done`    | 2 orgs, SOLO orderer, CCAAS Java chaincode, /fabric/* endpoints — FABRIC_ENABLED=true, PVC-backed storage |
 | 5   | Istio                            | `[x] done`    | Sidecar injection, ingress gateway, Fabric traffic routing        |
 | 6   | Hyperledger Besu                 | `[s] skipped` | Network config kept in `04_blockchain/besu/`; no K8s manifests   |
 | 7   | Identity Service                 | `[s] skipped` | No files generated                                                |

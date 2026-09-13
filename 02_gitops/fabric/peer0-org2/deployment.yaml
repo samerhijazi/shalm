@@ -84,4 +84,5 @@ spec:
           secret:
             secretName: fabric-org2-peer-msp-tlscacerts
         - name: data
-          emptyDir: {}
+          persistentVolumeClaim:
+            claimName: peer0-org2-data

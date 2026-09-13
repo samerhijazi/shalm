@@ -221,8 +221,24 @@ spec:
           volumeMounts:
             - name: org1-admin-msp
               mountPath: /org1-admin-msp
+            - name: org1-admin-msp-cacerts
+              mountPath: /org1-admin-msp/cacerts
+            - name: org1-admin-msp-signcerts
+              mountPath: /org1-admin-msp/signcerts
+            - name: org1-admin-msp-keystore
+              mountPath: /org1-admin-msp/keystore
+            - name: org1-admin-msp-tlscacerts
+              mountPath: /org1-admin-msp/tlscacerts
             - name: org2-admin-msp
               mountPath: /org2-admin-msp
+            - name: org2-admin-msp-cacerts
+              mountPath: /org2-admin-msp/cacerts
+            - name: org2-admin-msp-signcerts
+              mountPath: /org2-admin-msp/signcerts
+            - name: org2-admin-msp-keystore
+              mountPath: /org2-admin-msp/keystore
+            - name: org2-admin-msp-tlscacerts
+              mountPath: /org2-admin-msp/tlscacerts
             - name: channel-artifacts
               mountPath: /channel-artifacts
           resources:
@@ -236,9 +252,33 @@ spec:
         - name: org1-admin-msp
           secret:
             secretName: fabric-org1-admin-msp
+        - name: org1-admin-msp-cacerts
+          secret:
+            secretName: fabric-org1-admin-msp-cacerts
+        - name: org1-admin-msp-signcerts
+          secret:
+            secretName: fabric-org1-admin-msp-signcerts
+        - name: org1-admin-msp-keystore
+          secret:
+            secretName: fabric-org1-admin-msp-keystore
+        - name: org1-admin-msp-tlscacerts
+          secret:
+            secretName: fabric-org1-admin-msp-tlscacerts
         - name: org2-admin-msp
           secret:
             secretName: fabric-org2-admin-msp
+        - name: org2-admin-msp-cacerts
+          secret:
+            secretName: fabric-org2-admin-msp-cacerts
+        - name: org2-admin-msp-signcerts
+          secret:
+            secretName: fabric-org2-admin-msp-signcerts
+        - name: org2-admin-msp-keystore
+          secret:
+            secretName: fabric-org2-admin-msp-keystore
+        - name: org2-admin-msp-tlscacerts
+          secret:
+            secretName: fabric-org2-admin-msp-tlscacerts
         - name: channel-artifacts
           secret:
             secretName: fabric-artifacts

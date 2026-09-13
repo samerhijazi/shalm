@@ -139,6 +139,8 @@ AI agent:      FastAPI (namespace: ai, port 30810) — GET /summary (Loki), GET 
 ### Fabric (`04_blockchain/fabric/`, namespace `fabric`)
 
 - 2 orgs (Org1/Bank1, Org2/Bank2), 1 peer each, 1 SOLO orderer
+- Peer/orderer ledger storage is PersistentVolumeClaims (`local-path` StorageClass, `01_infrastructure/base/local-path-provisioner.yaml`) — not `emptyDir`, so a pod restart doesn't wipe the channel
+- `fabric-setup` Job (`02_gitops/fabric/setup-job.yaml`) creates/joins `mychannel` and installs/approves/commits the chaincode — mounts full MSP dirs (cacerts/signcerts/keystore/tlscacerts) for the org1/org2 admin identities, not just `config.yaml`
 - **Java chaincode** (`fabric-chaincode-java` SDK — not Quarkus): `InitLedger`, `Transfer`, `QueryBalance`, `createAccount`, `getAccount`, `deposit`, `deleteAccount`
 - API calls Fabric via `FabricGatewayService` using gRPC (port 7051)
 

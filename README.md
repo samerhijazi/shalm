@@ -76,7 +76,7 @@ CI/CD:          GitHub Actions — multi-arch build (linux/amd64,linux/arm64) �
 | AI Agent      | Python 3.12 · FastAPI                               |
 | GitOps        | ArgoCD (App-of-Apps pattern)                        |
 | CI/CD         | GitHub Actions · GHCR · multi-arch (amd64 + arm64) |
-| Platform      | Kubernetes · 3 Lima VMs (arm64) · Calico CNI        |
+| Platform      | Kubernetes · 3 Lima VMs (arm64) · Calico CNI · local-path-provisioner |
 | Registry      | ghcr.io/samerhijazi                                 |
 
 ---

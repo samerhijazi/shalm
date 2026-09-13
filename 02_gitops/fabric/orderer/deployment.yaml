@@ -82,4 +82,5 @@ spec:
           secret:
             secretName: fabric-artifacts
         - name: data
-          emptyDir: {}
+          persistentVolumeClaim:
+            claimName: orderer-data
