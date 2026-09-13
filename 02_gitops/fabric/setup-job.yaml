@@ -79,14 +79,14 @@ spec:
                 -c mychannel \
                 -f /channel-artifacts/mychannel.tx \
                 --outputBlock /tmp/mychannel.block \
-                --tls false \
+                --tls=false \
                 2>&1 || echo "Channel may already exist, continuing..."
 
               if [ ! -f /tmp/mychannel.block ]; then
                 echo "Fetching existing channel block..."
                 peer channel fetch 0 /tmp/mychannel.block \
                   -o orderer.fabric.svc.cluster.local:7050 \
-                  -c mychannel --tls false
+                  -c mychannel --tls=false
               fi
 
               # ── join peers ────────────────────────────────────────────────────
@@ -158,7 +158,7 @@ spec:
                 --sequence 1 \
                 --package-id "$PACKAGE_ID" \
                 -o orderer.fabric.svc.cluster.local:7050 \
-                --tls false 2>&1 || echo "Org1 approval may already exist"
+                --tls=false 2>&1 || echo "Org1 approval may already exist"
 
               # ── approve from Org2 ─────────────────────────────────────────────
               echo "==> Approving chaincode from Org2..."
@@ -172,7 +172,7 @@ spec:
                 --sequence 1 \
                 --package-id "$PACKAGE_ID" \
                 -o orderer.fabric.svc.cluster.local:7050 \
-                --tls false 2>&1 || echo "Org2 approval may already exist"
+                --tls=false 2>&1 || echo "Org2 approval may already exist"
 
               # ── check commit readiness ────────────────────────────────────────
               echo "==> Checking commit readiness..."
@@ -184,7 +184,7 @@ spec:
                 --name bank-transfer \
                 --version 1.0 \
                 --sequence 1 \
-                --tls false \
+                --tls=false \
                 --output json 2>&1
 
               # ── commit chaincode ──────────────────────────────────────────────
@@ -197,7 +197,7 @@ spec:
                 --peerAddresses peer0-org1.fabric.svc.cluster.local:7051 \
                 --peerAddresses peer0-org2.fabric.svc.cluster.local:7051 \
                 -o orderer.fabric.svc.cluster.local:7050 \
-                --tls false 2>&1 || echo "Chaincode may already be committed"
+                --tls=false 2>&1 || echo "Chaincode may already be committed"
 
               # ── InitLedger ────────────────────────────────────────────────────
               echo "==> Invoking InitLedger..."
@@ -207,7 +207,7 @@ spec:
                 -n bank-transfer \
                 --peerAddresses peer0-org1.fabric.svc.cluster.local:7051 \
                 --peerAddresses peer0-org2.fabric.svc.cluster.local:7051 \
-                --tls false \
+                --tls=false \
                 -c '{"function":"InitLedger","Args":[]}' 2>&1
 
               echo ""
