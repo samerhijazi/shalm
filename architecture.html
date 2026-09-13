@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shalm Platform — Architecture</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f5f7fa;color:#1a1f2e;padding:36px 24px;min-height:100vh}
+
+/* ── Header ───────────────────────────────────────────────────────── */
+.header{text-align:center;margin-bottom:40px}
+.header h1{font-size:26px;font-weight:800;letter-spacing:-0.5px;color:#111827}
+.header .sub{font-size:13px;color:#6b7280;margin-top:6px}
+.header .cluster{display:inline-flex;align-items:center;gap:6px;margin-top:10px;background:white;border:1px solid #e5e7eb;border-radius:20px;padding:5px 14px;font-size:12px;color:#374151;font-weight:500}
+
+/* ── CI/CD Pipeline ───────────────────────────────────────────────── */
+.pipeline-wrap{max-width:1100px;margin:0 auto 32px}
+.pipeline-label-row{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:#15803d;margin-bottom:10px;padding-left:4px}
+.pipeline{display:flex;align-items:center;background:white;border:1.5px solid #bbf7d0;border-radius:14px;padding:20px 28px;gap:0;overflow-x:auto}
+.ps{display:flex;flex-direction:column;align-items:center;gap:6px;min-width:110px;flex:1}
+.ps-icon{width:46px;height:46px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px;background:#f0fdf4}
+.ps-name{font-size:12px;font-weight:700;color:#15803d;text-align:center}
+.ps-detail{font-size:10px;color:#9ca3af;text-align:center;line-height:1.4}
+.pa{font-size:20px;color:#86efac;margin:0 6px;padding-bottom:20px;flex-shrink:0}
+
+/* ── Main Diagram ─────────────────────────────────────────────────── */
+.diagram{max-width:1100px;margin:0 auto;display:flex;flex-direction:column;gap:0}
+
+/* ── User Browser ─────────────────────────────────────────────────── */
+.user-row{display:flex;justify-content:center;margin-bottom:0}
+.user-box{background:white;border:2px dashed #d1d5db;border-radius:12px;padding:12px 32px;display:flex;align-items:center;gap:10px;font-size:13px;font-weight:600;color:#6b7280}
+.user-box span{font-size:24px}
+
+/* ── Flow connector ───────────────────────────────────────────────── */
+.connector{display:flex;flex-direction:column;align-items:center;padding:4px 0}
+.connector-line{width:2px;height:14px;background:#e5e7eb}
+.connector-arrow{font-size:12px;color:#d1d5db;line-height:1}
+.connector-label{font-size:10px;color:#9ca3af;margin-top:2px}
+
+/* ── Layer ────────────────────────────────────────────────────────── */
+.layer{border-radius:14px;padding:20px 22px;border:1.5px solid transparent;position:relative}
+.layer-head{display:flex;align-items:center;gap:8px;margin-bottom:14px}
+.layer-title{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.9px}
+.layer-ns{font-size:10px;color:#9ca3af;margin-left:auto;font-family:monospace}
+.components{display:flex;flex-wrap:wrap;gap:10px}
+
+/* ── Component Card ───────────────────────────────────────────────── */
+.card{background:white;border:1px solid rgba(0,0,0,0.07);border-radius:10px;padding:12px 15px;min-width:140px;flex:1;cursor:default;transition:box-shadow 0.15s,transform 0.15s;position:relative}
+.card:hover{box-shadow:0 6px 16px rgba(0,0,0,0.10);transform:translateY(-1px)}
+.card-name{font-size:13px;font-weight:700;color:#111827;margin-bottom:3px;display:flex;align-items:center;gap:5px}
+.card-detail{font-size:11px;color:#6b7280;line-height:1.6}
+.badge{display:inline-block;font-size:9px;font-weight:700;padding:1px 6px;border-radius:4px;font-family:monospace;margin-top:5px;margin-right:3px}
+.badge-port{background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe}
+.badge-ver{background:#f3f4f6;color:#6b7280;border:1px solid #e5e7eb}
+.badge-proto{background:#fef9c3;color:#854d0e;border:1px solid #fef08a}
+
+/* ── Layer color themes ───────────────────────────────────────────── */
+.l-apps{background:#faf5ff;border-color:#e9d5ff}.l-apps .layer-title{color:#7c3aed}
+.l-mesh{background:#fff7ed;border-color:#fed7aa}.l-mesh .layer-title{color:#c2410c}
+.l-blockchain{background:#fff1f2;border-color:#fecdd3}.l-blockchain .layer-title{color:#be123c}
+.l-observability{background:#f0fdfa;border-color:#99f6e4}.l-observability .layer-title{color:#0f766e}
+.l-infra{background:#eff6ff;border-color:#bfdbfe}.l-infra .layer-title{color:#1d4ed8}
+
+/* ── Sub-group within a layer ─────────────────────────────────────── */
+.subgroup{display:flex;flex-direction:column;gap:6px;flex:1;min-width:200px}
+.subgroup-label{font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:0.5px;padding:0 2px}
+.subgroup-cards{display:flex;flex-wrap:wrap;gap:8px}
+
+/* ── Data Flows ───────────────────────────────────────────────────── */
+.section{max-width:1100px;margin:32px auto 0;background:white;border:1px solid #e5e7eb;border-radius:14px;padding:24px}
+.section-title{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.9px;color:#374151;margin-bottom:16px}
+.flows-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.flow-card{background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;padding:14px}
+.flow-card-title{font-size:11px;font-weight:700;color:#374151;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.flow-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.flow-path{font-size:11px;color:#4b5563;line-height:2;font-family:monospace}
+.flow-path .arrow{color:#d1d5db}
+
+/* ── Version Table ────────────────────────────────────────────────── */
+.vtable{width:100%;border-collapse:collapse;font-size:12px}
+.vtable th{text-align:left;font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:0.5px;padding:8px 12px;border-bottom:1px solid #e5e7eb}
+.vtable td{padding:9px 12px;border-bottom:1px solid #f3f4f6;color:#374151;vertical-align:top}
+.vtable td:first-child{font-weight:600;color:#111827;white-space:nowrap}
+.vtable td code{font-size:10px;background:#f3f4f6;padding:1px 5px;border-radius:3px;font-family:monospace;color:#374151}
+.vtable tr:last-child td{border-bottom:none}
+.vtable tr:hover td{background:#f9fafb}
+.cat-row td{background:#f9fafb;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.7px;color:#9ca3af;padding:10px 12px 4px}
+
+/* ── Namespace pill ───────────────────────────────────────────────── */
+.ns-pill{display:inline-block;background:#f3f4f6;border:1px solid #e5e7eb;border-radius:10px;font-size:9px;font-weight:600;padding:1px 7px;color:#6b7280;font-family:monospace;white-space:nowrap}
+</style>
+</head>
+<body>
+
+<!-- ── Header ────────────────────────────────────────────────────── -->
+<div class="header">
+  <h1>Shalm Platform Architecture</h1>
+  <div class="sub">10-Phase Kubernetes · GitOps · Blockchain · Observability Lab</div>
+  <div style="display:flex;justify-content:center;gap:10px;margin-top:10px;flex-wrap:wrap">
+    <span class="cluster">🖥 Master 192.168.105.3</span>
+    <span class="cluster">🖥 Worker 192.168.105.4</span>
+    <span class="cluster">🖥 Worker 192.168.105.5</span>
+    <span class="cluster">🏗 arm64 · Ubuntu 24.04</span>
+  </div>
+</div>
+
+<!-- ── CI/CD Pipeline ─────────────────────────────────────────────── -->
+<div class="pipeline-wrap">
+  <div class="pipeline-label-row">CI / CD Pipeline</div>
+  <div class="pipeline">
+    <div class="ps">
+      <div class="ps-icon">📝</div>
+      <div class="ps-name">Git Push</div>
+      <div class="ps-detail">github.com<br>samerhijazi/shalm</div>
+    </div>
+    <div class="pa">→</div>
+    <div class="ps">
+      <div class="ps-icon">⚙️</div>
+      <div class="ps-name">GitHub Actions</div>
+      <div class="ps-detail">Multi-arch build<br>QEMU + Buildx<br>linux/amd64,arm64</div>
+    </div>
+    <div class="pa">→</div>
+    <div class="ps">
+      <div class="ps-icon">📦</div>
+      <div class="ps-name">GHCR</div>
+      <div class="ps-detail">ghcr.io/samerhijazi<br>Container Registry</div>
+    </div>
+    <div class="pa">→</div>
+    <div class="ps">
+      <div class="ps-icon">🔄</div>
+      <div class="ps-name">ArgoCD</div>
+      <div class="ps-detail">App-of-Apps GitOps<br>Auto-sync<br><span class="badge badge-port">:30080</span></div>
+    </div>
+    <div class="pa">→</div>
+    <div class="ps">
+      <div class="ps-icon">☸️</div>
+      <div class="ps-name">Kubernetes</div>
+      <div class="ps-detail">v1.30 · kubeadm<br>12 namespaces</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Main Diagram ───────────────────────────────────────────────── -->
+<div class="diagram">
+
+  <!-- User -->
+  <div class="user-row">
+    <div class="user-box">
+      <span>🌐</span> User Browser
+    </div>
+  </div>
+  <div class="connector"><div class="connector-line"></div><div class="connector-arrow">▼</div><div class="connector-label">HTTP</div></div>
+
+  <!-- Applications -->
+  <div class="layer l-apps">
+    <div class="layer-head">
+      <svg width="14" height="14" fill="none" stroke="#7c3aed" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M9 9h6M9 12h6M9 15h4"/></svg>
+      <span class="layer-title">Applications</span>
+      <span class="layer-ns">ns: quarkus-ui · quarkus-api · ai</span>
+    </div>
+    <div class="components">
+
+      <div class="card" style="max-width:220px">
+        <div class="card-name">🖼 Quarkus UI</div>
+        <div class="card-detail">
+          Qute templates · Dashboard<br>
+          4 tabs: Ledger, Transfers,<br>
+          Accounts, Manage<br>
+          REST client → quarkus-api
+        </div>
+        <span class="badge badge-ver">Quarkus 3.9.5</span>
+        <span class="badge badge-ver">Java 21</span><br>
+        <span class="badge badge-port">NodePort :30801</span>
+      </div>
+
+      <div class="card" style="max-width:240px">
+        <div class="card-name">⚡ Quarkus API</div>
+        <div class="card-detail">
+          Jakarta REST 3.0<br>
+          AccountsResource · TransferResource<br>
+          BalanceResource · FabricResource<br>
+          Micrometer metrics · JSON logs
+        </div>
+        <span class="badge badge-ver">Quarkus 3.9.5</span>
+        <span class="badge badge-ver">Java 21</span><br>
+        <span class="badge badge-port">NodePort :30800</span>
+        <span class="badge badge-proto">/metrics → Prometheus</span>
+      </div>
+
+      <div class="card" style="max-width:200px">
+        <div class="card-name">🤖 AI Agent</div>
+        <div class="card-detail">
+          GET /summary → Loki<br>
+          GET /anomalies → Prometheus<br>
+          GET /health
+        </div>
+        <span class="badge badge-ver">FastAPI 0.115.5</span>
+        <span class="badge badge-ver">Python 3.12</span><br>
+        <span class="badge badge-port">NodePort :30810</span>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="connector"><div class="connector-line"></div><div class="connector-arrow">▼</div><div class="connector-label">gRPC :7051 (Fabric Gateway SDK v1.4.0)</div></div>
+
+  <!-- Service Mesh -->
+  <div class="layer l-mesh">
+    <div class="layer-head">
+      <svg width="14" height="14" fill="none" stroke="#c2410c" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 3v18M3 12h18"/></svg>
+      <span class="layer-title">Service Mesh — Istio v1.23.2</span>
+      <span class="layer-ns">ns: istio-system</span>
+    </div>
+    <div class="components">
+
+      <div class="card">
+        <div class="card-name">🔧 istiod</div>
+        <div class="card-detail">
+          Control plane<br>
+          Envoy sidecar injection<br>
+          mTLS + PeerAuthentication
+        </div>
+        <span class="badge badge-ver">v1.23.2</span>
+      </div>
+
+      <div class="card">
+        <div class="card-name">🚪 Ingress Gateway</div>
+        <div class="card-detail">
+          HTTP port 80<br>
+          Wildcard hosts *<br>
+          shalm-gateway + VirtualService
+        </div>
+        <span class="badge badge-proto">Routes: /fabric/* /accounts /transfer /*</span>
+      </div>
+
+      <div class="card">
+        <div class="card-name">🔍 Envoy Sidecars</div>
+        <div class="card-detail">
+          Injected on fabric ns<br>
+          Access logging → stdout<br>
+          Traces → Jaeger :9411
+        </div>
+        <span class="badge badge-proto">Zipkin protocol</span>
+        <span class="badge badge-proto">100% sampling</span>
+      </div>
+
+      <div class="card">
+        <div class="card-name">🗺 Kiali</div>
+        <div class="card-detail">
+          Service mesh topology<br>
+          Traffic graph · Health<br>
+          Integrates Grafana + Jaeger
+        </div>
+        <span class="badge badge-ver">v1.89.7</span>
+        <span class="badge badge-port">:30088</span>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="connector"><div class="connector-line"></div><div class="connector-arrow">▼</div><div class="connector-label">gRPC peer communication</div></div>
+
+  <!-- Blockchain -->
+  <div class="layer l-blockchain">
+    <div class="layer-head">
+      <svg width="14" height="14" fill="none" stroke="#be123c" stroke-width="2" viewBox="0 0 24 24"><path d="M7 7h10M7 12h10M7 17h6"/><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
+      <span class="layer-title">Hyperledger Fabric v2.5</span>
+      <span class="layer-ns">ns: fabric · 2 orgs / 2 peers / SOLO orderer</span>
+    </div>
+    <div class="components">
+
+      <div class="card">
+        <div class="card-name">📋 Orderer</div>
+        <div class="card-detail">
+          SOLO consensus<br>
+          mychannel<br>
+          OrdererMSP
+        </div>
+        <span class="badge badge-ver">fabric-orderer:2.5</span>
+        <span class="badge badge-port">:7050</span>
+      </div>
+
+      <div class="card">
+        <div class="card-name">🏦 Peer0-Org1</div>
+        <div class="card-detail">
+          Bank1 / Org1MSP<br>
+          peer0.org1.shalm.local<br>
+          Chaincode :7052
+        </div>
+        <span class="badge badge-ver">fabric-peer:2.5</span>
+        <span class="badge badge-port">gRPC :7051</span>
+      </div>
+
+      <div class="card">
+        <div class="card-name">🏦 Peer0-Org2</div>
+        <div class="card-detail">
+          Bank2 / Org2MSP<br>
+          peer0.org2.shalm.local<br>
+          Chaincode :7052
+        </div>
+        <span class="badge badge-ver">fabric-peer:2.5</span>
+        <span class="badge badge-port">gRPC :7051</span>
+      </div>
+
+      <div class="card">
+        <div class="card-name">⛓ Chaincode (CCAAS)</div>
+        <div class="card-detail">
+          bank-transfer v1.0<br>
+          InitLedger · Transfer<br>
+          QueryBalance · createAccount<br>
+          Java SDK (not Quarkus)
+        </div>
+        <span class="badge badge-ver">fabric-chaincode-java 2.5.0</span><br>
+        <span class="badge badge-port">:9999</span>
+      </div>
+
+      <div class="card">
+        <div class="card-name">🔐 Crypto / MSP</div>
+        <div class="card-detail">
+          Org1 + Org2 certs<br>
+          Stored as K8s Secrets<br>
+          4 accounts seeded<br>
+          ACC-B1-001/002 · ACC-B2-001/002
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="connector"><div class="connector-line"></div><div class="connector-arrow">▼</div><div class="connector-label">scrape /metrics · ship logs · emit traces</div></div>
+
+  <!-- Observability -->
+  <div class="layer l-observability">
+    <div class="layer-head">
+      <svg width="14" height="14" fill="none" stroke="#0f766e" stroke-width="2" viewBox="0 0 24 24"><path d="M3 12h2l3-7 4 14 3-7h6"/></svg>
+      <span class="layer-title">Observability Stack</span>
+      <span class="layer-ns">ns: observability · kube-prometheus-stack 65.1.1</span>
+    </div>
+    <div class="components">
+
+      <div class="subgroup">
+        <div class="subgroup-label">Metrics</div>
+        <div class="subgroup-cards">
+          <div class="card">
+            <div class="card-name">📊 Prometheus</div>
+            <div class="card-detail">
+              Scrapes all namespaces<br>
+              ServiceMonitors (CRDs)<br>
+              Retention: 7 days
+            </div>
+            <span class="badge badge-port">:30090</span>
+          </div>
+          <div class="card">
+            <div class="card-name">🔔 Alertmanager</div>
+            <div class="card-detail">
+              Alert routing · inhibit rules<br>
+              Latency &gt;200ms<br>
+              Error rate &gt;1%<br>
+              Pod health · Fabric rules
+            </div>
+            <span class="badge badge-port">:30093</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="subgroup">
+        <div class="subgroup-label">Dashboards</div>
+        <div class="subgroup-cards">
+          <div class="card">
+            <div class="card-name">📈 Grafana</div>
+            <div class="card-detail">
+              Datasources:<br>
+              Prometheus · Loki · Jaeger<br>
+              Dashboards: cluster-health,<br>
+              pod-health, request-latency
+            </div>
+            <span class="badge badge-port">:30300</span>
+            <span class="badge badge-ver">admin / shalm-admin</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="subgroup">
+        <div class="subgroup-label">Logs</div>
+        <div class="subgroup-cards">
+          <div class="card">
+            <div class="card-name">📝 Loki</div>
+            <div class="card-detail">
+              Log aggregation<br>
+              SingleBinary mode<br>
+              Filesystem storage
+            </div>
+            <span class="badge badge-ver">v3.0.0</span>
+            <span class="badge badge-port">:3100</span>
+          </div>
+          <div class="card">
+            <div class="card-name">🚚 Promtail</div>
+            <div class="card-detail">
+              DaemonSet (all nodes)<br>
+              K8s pod log discovery<br>
+              Ships to Loki
+            </div>
+            <span class="badge badge-ver">v6.16.6</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="subgroup">
+        <div class="subgroup-label">Traces</div>
+        <div class="subgroup-cards">
+          <div class="card">
+            <div class="card-name">🔭 Jaeger</div>
+            <div class="card-detail">
+              Distributed tracing<br>
+              Receives from Envoy<br>
+              Zipkin protocol<br>
+              In-memory (10k spans)
+            </div>
+            <span class="badge badge-ver">v1.57</span>
+            <span class="badge badge-port">UI :30686</span>
+            <span class="badge badge-port">Zipkin :9411</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="connector"><div class="connector-line"></div><div class="connector-arrow">▼</div></div>
+
+  <!-- Infrastructure -->
+  <div class="layer l-infra">
+    <div class="layer-head">
+      <svg width="14" height="14" fill="none" stroke="#1d4ed8" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="7" rx="1"/><rect x="2" y="14" width="20" height="7" rx="1"/><path d="M6 7h.01M6 18h.01"/></svg>
+      <span class="layer-title">Infrastructure</span>
+      <span class="layer-ns">Lima VMs · macOS host · arm64</span>
+    </div>
+    <div class="components">
+
+      <div class="card">
+        <div class="card-name">☸️ Kubernetes v1.30</div>
+        <div class="card-detail">
+          kubeadm provisioned<br>
+          12 namespaces<br>
+          Metrics Server
+        </div>
+        <span class="badge badge-ver">v1.30</span>
+        <span class="badge badge-ver">containerd runtime</span>
+      </div>
+
+      <div class="card">
+        <div class="card-name">🖥 Lima VMs (3×)</div>
+        <div class="card-detail">
+          vz · Ubuntu 24.04 arm64<br>
+          2 CPU · 4GiB RAM · 20GiB each<br>
+          Ansible-provisioned
+        </div>
+        <span class="badge badge-ver">master :3 · worker :4 · worker :5</span>
+      </div>
+
+      <div class="card">
+        <div class="card-name">🌐 Calico CNI</div>
+        <div class="card-detail">
+          Network policy<br>
+          Pod-to-pod routing<br>
+          Requires periodic token refresh
+        </div>
+        <span class="badge badge-ver">v3.28.0</span>
+      </div>
+
+      <div class="card">
+        <div class="card-name">⚖️ MetalLB</div>
+        <div class="card-detail">
+          L2 advertisement<br>
+          IP pool: .100–.199<br>
+          NodePort exposure
+        </div>
+        <span class="badge badge-ver">v0.14.9</span>
+      </div>
+
+      <div class="card">
+        <div class="card-name">📦 GHCR Registry</div>
+        <div class="card-detail">
+          ghcr.io/samerhijazi<br>
+          Custom images (multi-arch):<br>
+          quarkus-api · quarkus-ui<br>
+          shalm-ai-agent · shalm-chaincode
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-name">🗒 Kubernetes Dashboard</div>
+        <div class="card-detail">
+          admin-user ClusterRoleBinding<br>
+          Token auth
+        </div>
+        <span class="badge badge-ver">v7.12.0</span>
+        <span class="badge badge-port">HTTPS :30091</span>
+      </div>
+
+    </div>
+  </div>
+
+</div><!-- /diagram -->
+
+<!-- ── Data Flows ──────────────────────────────────────────────────── -->
+<div class="section">
+  <div class="section-title">Key Data Flows</div>
+  <div class="flows-grid">
+
+    <div class="flow-card">
+      <div class="flow-card-title"><span class="flow-dot" style="background:#7c3aed"></span> Request Path</div>
+      <div class="flow-path">
+        Browser<span class="arrow"> → </span>Quarkus UI :30801<br>
+        <span class="arrow"> → </span>Quarkus API :30800<br>
+        <span class="arrow"> → </span>FabricGatewayService<br>
+        <span class="arrow"> → </span>Peer0 gRPC :7051<br>
+        <span class="arrow"> → </span>Chaincode :9999
+      </div>
+    </div>
+
+    <div class="flow-card">
+      <div class="flow-card-title"><span class="flow-dot" style="background:#0f766e"></span> Metrics Pipeline</div>
+      <div class="flow-path">
+        Quarkus API /metrics<br>
+        <span class="arrow"> → </span>Prometheus scrape<br>
+        <span class="arrow"> → </span>Alertmanager (rules)<br>
+        <span class="arrow"> → </span>Grafana dashboards<br>
+        <span class="arrow"> → </span>AI Agent /anomalies
+      </div>
+    </div>
+
+    <div class="flow-card">
+      <div class="flow-card-title"><span class="flow-dot" style="background:#0284c7"></span> Log Pipeline</div>
+      <div class="flow-path">
+        All pod stdout (JSON)<br>
+        <span class="arrow"> → </span>Promtail DaemonSet<br>
+        <span class="arrow"> → </span>Loki :3100<br>
+        <span class="arrow"> → </span>Grafana (Loki datasource)<br>
+        <span class="arrow"> → </span>AI Agent /summary
+      </div>
+    </div>
+
+    <div class="flow-card">
+      <div class="flow-card-title"><span class="flow-dot" style="background:#c2410c"></span> Distributed Traces</div>
+      <div class="flow-path">
+        Istio Envoy sidecars<br>
+        <span class="arrow"> → </span>Jaeger :9411 (Zipkin)<br>
+        <span class="arrow"> → </span>Jaeger UI :30686<br>
+        <span class="arrow"> ← </span>Kiali integration<br>
+        <span class="arrow"> ← </span>Grafana datasource
+      </div>
+    </div>
+
+    <div class="flow-card">
+      <div class="flow-card-title"><span class="flow-dot" style="background:#15803d"></span> GitOps Deploy</div>
+      <div class="flow-path">
+        git push → GitHub Actions<br>
+        <span class="arrow"> → </span>mvn package + Docker build<br>
+        <span class="arrow"> → </span>Push to GHCR<br>
+        <span class="arrow"> → </span>Update manifest SHA<br>
+        <span class="arrow"> → </span>ArgoCD auto-sync → K8s
+      </div>
+    </div>
+
+    <div class="flow-card">
+      <div class="flow-card-title"><span class="flow-dot" style="background:#be123c"></span> Fabric Network</div>
+      <div class="flow-path">
+        fabric-setup Job<br>
+        <span class="arrow"> → </span>create mychannel<br>
+        <span class="arrow"> → </span>join peer0-org1 + peer0-org2<br>
+        <span class="arrow"> → </span>install bank-transfer chaincode<br>
+        <span class="arrow"> → </span>approve + commit + InitLedger
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── Version Reference ───────────────────────────────────────────── -->
+<div class="section">
+  <div class="section-title">Component Version Reference</div>
+  <table class="vtable">
+    <thead>
+      <tr><th>Component</th><th>Version</th><th>Namespace</th><th>NodePort</th></tr>
+    </thead>
+    <tbody>
+      <tr class="cat-row"><td colspan="4">Applications</td></tr>
+      <tr><td>Quarkus API</td><td>Quarkus 3.9.5 · Java 21 · Maven 3.9.6</td><td><span class="ns-pill">quarkus-api</span></td><td><code>30800</code></td></tr>
+      <tr><td>Quarkus UI</td><td>Quarkus 3.9.5 · Qute · Jakarta REST 3.0</td><td><span class="ns-pill">quarkus-ui</span></td><td><code>30801</code></td></tr>
+      <tr><td>AI Observability Agent</td><td>FastAPI 0.115.5 · Python 3.12 · uvicorn 0.32.1</td><td><span class="ns-pill">ai</span></td><td><code>30810</code></td></tr>
+
+      <tr class="cat-row"><td colspan="4">Blockchain</td></tr>
+      <tr><td>Hyperledger Fabric Peer</td><td>v2.5</td><td><span class="ns-pill">fabric</span></td><td>—</td></tr>
+      <tr><td>Hyperledger Fabric Orderer</td><td>v2.5 · SOLO</td><td><span class="ns-pill">fabric</span></td><td>—</td></tr>
+      <tr><td>Fabric Chaincode Java SDK</td><td>v2.5.0</td><td><span class="ns-pill">fabric</span></td><td>—</td></tr>
+      <tr><td>Fabric Gateway SDK</td><td>v1.4.0</td><td>(in quarkus-api)</td><td>—</td></tr>
+      <tr><td>gRPC</td><td>v1.63.0</td><td>—</td><td>—</td></tr>
+
+      <tr class="cat-row"><td colspan="4">Service Mesh</td></tr>
+      <tr><td>Istio (istiod)</td><td>v1.23.2</td><td><span class="ns-pill">istio-system</span></td><td>—</td></tr>
+      <tr><td>Kiali</td><td>v1.89.7</td><td><span class="ns-pill">istio-system</span></td><td><code>30088</code></td></tr>
+
+      <tr class="cat-row"><td colspan="4">Observability</td></tr>
+      <tr><td>kube-prometheus-stack (Prometheus)</td><td>Helm 65.1.1</td><td><span class="ns-pill">observability</span></td><td><code>30090</code></td></tr>
+      <tr><td>Grafana</td><td>(via kube-prometheus-stack)</td><td><span class="ns-pill">observability</span></td><td><code>30300</code></td></tr>
+      <tr><td>Alertmanager</td><td>(via kube-prometheus-stack)</td><td><span class="ns-pill">observability</span></td><td><code>30093</code></td></tr>
+      <tr><td>Grafana Loki</td><td>v3.0.0</td><td><span class="ns-pill">observability</span></td><td>—</td></tr>
+      <tr><td>Promtail</td><td>Helm 6.16.6</td><td><span class="ns-pill">observability</span></td><td>—</td></tr>
+      <tr><td>Jaeger all-in-one</td><td>v1.57</td><td><span class="ns-pill">observability</span></td><td><code>30686</code></td></tr>
+
+      <tr class="cat-row"><td colspan="4">GitOps &amp; CI/CD</td></tr>
+      <tr><td>ArgoCD</td><td>latest (Helm)</td><td><span class="ns-pill">argocd</span></td><td><code>30080</code></td></tr>
+      <tr><td>GitHub Actions — checkout</td><td>v4.2.2</td><td>—</td><td>—</td></tr>
+      <tr><td>GitHub Actions — build-push</td><td>v5.4.0</td><td>—</td><td>—</td></tr>
+      <tr><td>GHCR</td><td>ghcr.io/samerhijazi</td><td>—</td><td>—</td></tr>
+
+      <tr class="cat-row"><td colspan="4">Infrastructure</td></tr>
+      <tr><td>Kubernetes</td><td>v1.30 · kubeadm</td><td><span class="ns-pill">kube-system</span></td><td>—</td></tr>
+      <tr><td>containerd</td><td>(CRI)</td><td>—</td><td>—</td></tr>
+      <tr><td>Calico CNI</td><td>v3.28.0</td><td><span class="ns-pill">kube-system</span></td><td>—</td></tr>
+      <tr><td>MetalLB</td><td>v0.14.9 · L2</td><td><span class="ns-pill">metallb-system</span></td><td>—</td></tr>
+      <tr><td>Kubernetes Dashboard</td><td>v7.12.0</td><td><span class="ns-pill">kubernetes-dashboard</span></td><td><code>30091</code></td></tr>
+      <tr><td>Lima VMs</td><td>Ubuntu 24.04 · vz · arm64</td><td>macOS host</td><td>—</td></tr>
+      <tr><td>Ansible</td><td>cluster provisioning</td><td>—</td><td>—</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div style="text-align:center;margin-top:32px;font-size:11px;color:#9ca3af;padding-bottom:16px">
+  Shalm Platform · 192.168.105.3 (master) · Phases 0–5, 8–10 complete
+</div>
+
+</body>
+</html>
