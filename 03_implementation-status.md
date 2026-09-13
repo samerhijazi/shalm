@@ -19,6 +19,7 @@ k8s-worker-02 (192.168.105.5)
 
 ## Current State (read this first in a new session)
 
+- ⚠️ **IN PROGRESS: Fabric live transactions still blocked — see "Fabric Live-Transaction Blocker" section below before touching Fabric again.**
 - **All phases complete (0–5, 8–10). Phases 6 and 7 skipped.**
 - Phases 6 (Besu) and 7 (Identity Service) are **skipped** — network config kept in `04_blockchain/besu/` for reference
 - All nodes are **arm64** — every custom Docker image must be built multi-arch (`linux/amd64,linux/arm64`)
@@ -40,6 +41,74 @@ k8s-worker-02 (192.168.105.5)
 
 **Post-deploy checklist (after first CI push of a new image):**
 - Go to `https://github.com/samerhijazi?tab=packages` and set the new package to **Public**
+
+---
+
+## Fabric Live-Transaction Blocker (in progress — pick up here)
+
+**Session date: 2026-09-13/14.** `FABRIC_ENABLED=true` is live, the channel
+`mychannel` genuinely exists, and the `bank-transfer` chaincode is
+installed/approved/**committed at sequence 4** on both peers — none of
+that had ever actually worked before this session, and 9 distinct real
+bugs were found and fixed to get there (all already merged to `main`,
+see commits `b04d549` through `d6481f0`):
+
+1. `FABRIC_ENABLED` was hardcoded false + `fabric-org1-admin` secret only
+   existed in the `fabric` namespace, not `quarkus-api` (rule 10a)
+2. `grpc-netty-shaded:1.63.0` vs `fabric-gateway`'s transitive
+   `grpc-core:1.62.2` — classpath skew crashed the first RPC
+3. `fabric-setup` Job only mounted `config.yaml`, never the
+   cacerts/signcerts/keystore/tlscacerts MSP subdirectories (rule 10a1)
+4. `--tls false` is invalid pflag syntax (parses as `--tls` + a stray
+   arg) — silently tried to enable TLS with no cert configured
+5. No StorageClass existed at all — added `local-path-provisioner`
+   (rule 10a0) and moved peer/orderer/orderer off `emptyDir`
+6. `RollingUpdate` strategy + RWO local-path PVCs crash-looped the new
+   pod on every restart (`transientStoreFileLock` held twice) — fixed
+   with `strategy.type: Recreate`
+7. `tar czf` embeds a timestamp, so re-packaging identical chaincode
+   content produced a different package ID every run
+8. `PACKAGE_ID` was extracted by grepping `queryinstalled`, which
+   accumulates one line per historical install — matched all of them
+   into one garbled multi-line value that didn't match anything real
+9. **Chaincode CCAAS init sequence** (`04_blockchain/fabric/chaincode/.../BankChaincode.java`):
+   constructing `NettyChaincodeServer` manually skips everything
+   `ChaincodeBase.start(args)` normally does before connecting. Fixed
+   by replicating the exact real sequence from fabric-chaincode-java
+   2.5.0's own source: `initializeLogging → processEnvironmentOptions
+   → processCommandLineOptions → validateOptions → getChaincodeConfig
+   → Metrics.initialize → Traces.initialize`. **Verified**: chaincode
+   container logs now show zero exceptions and clean registration with
+   both peers.
+
+**What's still blocking a live `InitLedger`/query:** every attempt now
+gets further than before (channel/install/approve all succeed) but then
+hits either `upstream request timeout` (Envoy's own error string, not
+Fabric's) on `approveformyorg`, or a genuine multi-minute **hang** (not
+a fast failure) on `checkcommitreadiness` — both are long-lived
+streaming calls (Fabric's "deliver filtered" event listener). This
+looks like Istio/Envoy sidecar behavior with Fabric's long-lived gRPC
+streams, not an application or manifest bug — a different category of
+problem from the 9 above. It was **not** resolved by removing job
+contention (ran with zero competing jobs, same result).
+
+**Next diagnostic steps, not yet tried:**
+- Check Istio's proxy config for stream idle-timeout / `maxConnectionAge`
+  settings that may be too aggressive for Fabric's event-listening
+  pattern (`istioctl proxy-config` against a peer pod, or the mesh's
+  `DestinationRule`/`EnvoyFilter` resources if any exist)
+- Disable Istio sidecar injection on the `fabric` namespace as a
+  diagnostic, matching the precedent already set for `quarkus-ui` in
+  commit `706828d` for a similar-smelling issue
+- To resume: `kubectl delete job fabric-setup -n fabric` and reapply
+  `02_gitops/fabric/setup-job.yaml` (ArgoCD auto-recreates it anyway);
+  watch logs via the Loki-via-Grafana technique in rule 10c. Do NOT run
+  a second manual copy of this job concurrently with the auto-recreated
+  one — they contend for the same peer/orderer connections.
+- Chaincode sequence is now at **4** (committed). If you need to bump it
+  again (e.g. after another code change forces a reinstall), the
+  `--sequence` value is hardcoded in 4 places in `setup-job.yaml` —
+  update all four together.
 
 ---
 
@@ -263,7 +332,7 @@ shalm-platform/
 | 1   | Observability Stack              | `[x] done`    | Prometheus, Grafana, Loki+Promtail, dashboards                    |
 | 2   | Quarkus API                      | `[x] done`    | REST API, in-memory state, metrics, structured logs, GHCR, GitOps |
 | 3   | Quarkus UI                       | `[x] done`    | Qute templates, balance/tx views, wired to API, GitOps            |
-| 4   | Hyperledger Fabric               | `[x] done`    | 2 orgs, SOLO orderer, CCAAS Java chaincode, /fabric/* endpoints — FABRIC_ENABLED=true, PVC-backed storage |
+| 4   | Hyperledger Fabric               | `[~] in-progress` | Channel + chaincode committed (seq 4), 9 real bugs fixed — live invoke blocked on suspected Istio streaming timeout, see "Fabric Live-Transaction Blocker" |
 | 5   | Istio                            | `[x] done`    | Sidecar injection, ingress gateway, Fabric traffic routing        |
 | 6   | Hyperledger Besu                 | `[s] skipped` | Network config kept in `04_blockchain/besu/`; no K8s manifests   |
 | 7   | Identity Service                 | `[s] skipped` | No files generated                                                |

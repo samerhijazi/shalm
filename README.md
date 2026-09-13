@@ -89,7 +89,7 @@ CI/CD:          GitHub Actions â€” multi-arch build (linux/amd64,linux/arm64) â†
 | 1 | Observability Stack           | Done      |
 | 2 | Quarkus API                   | Done      |
 | 3 | Quarkus UI                    | Done      |
-| 4 | Hyperledger Fabric            | Done      |
+| 4 | Hyperledger Fabric            | In progress (see below) |
 | 5 | Istio Service Mesh            | Done      |
 | 6 | Hyperledger Besu              | Skipped   |
 | 7 | Identity Service              | Skipped   |
@@ -97,7 +97,7 @@ CI/CD:          GitHub Actions â€” multi-arch build (linux/amd64,linux/arm64) â†
 | 9 | SRE Layer                     | Done      |
 | 10| AI Observability Agent        | Done      |
 
-All active phases complete. Phases 6 (Besu) and 7 (Identity) intentionally skipped.
+Phases 6 (Besu) and 7 (Identity) intentionally skipped. Fabric channel + chaincode are committed and healthy, but live invocations are blocked on a suspected Istio/Envoy sidecar issue with Fabric's long-lived event streams â€” see `03_implementation-status.md`'s "Fabric Live-Transaction Blocker" section for the full writeup and next diagnostic steps. All other phases complete.
 
 ---
 
