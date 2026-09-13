@@ -155,7 +155,7 @@ spec:
                 --channelID mychannel \
                 --name bank-transfer \
                 --version 1.0 \
-                --sequence 2 \
+                --sequence 3 \
                 --package-id "$PACKAGE_ID" \
                 -o orderer.fabric.svc.cluster.local:7050 \
                 --tls=false 2>&1 || echo "Org1 approval may already exist"
@@ -169,7 +169,7 @@ spec:
                 --channelID mychannel \
                 --name bank-transfer \
                 --version 1.0 \
-                --sequence 2 \
+                --sequence 3 \
                 --package-id "$PACKAGE_ID" \
                 -o orderer.fabric.svc.cluster.local:7050 \
                 --tls=false 2>&1 || echo "Org2 approval may already exist"
@@ -183,7 +183,7 @@ spec:
                 --channelID mychannel \
                 --name bank-transfer \
                 --version 1.0 \
-                --sequence 2 \
+                --sequence 3 \
                 --tls=false \
                 --output json 2>&1
 
@@ -193,13 +193,18 @@ spec:
                 --channelID mychannel \
                 --name bank-transfer \
                 --version 1.0 \
-                --sequence 2 \
+                --sequence 3 \
                 --peerAddresses peer0-org1.fabric.svc.cluster.local:7051 \
                 --peerAddresses peer0-org2.fabric.svc.cluster.local:7051 \
                 -o orderer.fabric.svc.cluster.local:7050 \
                 --tls=false 2>&1 || echo "Chaincode may already be committed"
 
               # ── InitLedger ────────────────────────────────────────────────────
+              # Give the peer's lifecycle cache a moment to catch up with the
+              # commit that just happened -- invoking immediately can race and
+              # fail with "chaincode definition exists, but chaincode is not
+              # installed" even though it just was.
+              sleep 5
               echo "==> Invoking InitLedger..."
               peer chaincode invoke \
                 -o orderer.fabric.svc.cluster.local:7050 \
