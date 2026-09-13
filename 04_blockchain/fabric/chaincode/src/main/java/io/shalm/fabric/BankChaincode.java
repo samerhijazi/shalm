@@ -11,10 +11,14 @@ public class BankChaincode extends ChaincodeBase {
 
     private final ObjectMapper mapper = new ObjectMapper();
 
-    public BankChaincode() {
-        // NettyChaincodeServer calls validateOptions() during construction before
-        // processEnvironmentOptions() would otherwise run — so we call it here first.
+    public BankChaincode(String[] args) {
+        // NettyChaincodeServer's constructor calls validateOptions(), which reads
+        // chaincodeConfig -- that field is only populated by processEnvironmentOptions()
+        // + processCommandLineOptions(args), the same two calls start(args) itself makes
+        // before ever touching the config. Replicate that order here since we construct
+        // the server manually instead of calling the inherited start(args).
         processEnvironmentOptions();
+        processCommandLineOptions(args);
     }
 
     @Override
