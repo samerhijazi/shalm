@@ -285,6 +285,7 @@
         <button class="tab-btn" data-tab="transfers"   onclick="showTab('transfers')">Transfers</button>
         <button class="tab-btn" data-tab="accounts"    onclick="showTab('accounts')">Accounts</button>
         <button class="tab-btn" data-tab="manage"      onclick="showTab('manage')">Manage Accounts</button>
+        <button class="tab-btn" data-tab="tests"       onclick="showTab('tests')">Tests</button>
     </div>
 
     <!-- ── Tab: World State ── -->
@@ -523,6 +524,58 @@
                     </div>
                     <button type="submit" class="btn btn-danger">Delete Account</button>
                 </form>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- ── Tab: Tests ── -->
+    <div id="tab-tests" class="tab-content">
+        <p class="section-label">Automated Test Results</p>
+        <div class="manage-grid">
+
+            <div class="card">
+                <h2>quarkus-api</h2>
+                {#if apiTests}
+                <div class="account-row">
+                    <div class="account-info">
+                        <div class="client">{apiTests.passed} / {apiTests.tests} passed</div>
+                        <div class="acc-id">{#if apiTests.timestamp}last run: {apiTests.timestamp}{#else}not yet run{/if}</div>
+                    </div>
+                    <div class="account-balance">
+                        {#if apiTests.isPassing}
+                        <span class="badge badge-success">&#10003; passing</span>
+                        {#else}
+                        <span class="badge badge-failed">&#10007; failing</span>
+                        {/if}
+                    </div>
+                </div>
+                <div class="note">failures: {apiTests.failures} &middot; errors: {apiTests.errors} &middot; skipped: {apiTests.skipped}{#if apiTests.commit} &middot; commit {apiTests.commit}{/if}</div>
+                {#else}
+                <p class="empty">Could not reach quarkus-api test results.</p>
+                {/if}
+            </div>
+
+            <div class="card">
+                <h2>quarkus-ui</h2>
+                {#if uiTests}
+                <div class="account-row">
+                    <div class="account-info">
+                        <div class="client">{uiTests.passed} / {uiTests.tests} passed</div>
+                        <div class="acc-id">{#if uiTests.timestamp}last run: {uiTests.timestamp}{#else}not yet run{/if}</div>
+                    </div>
+                    <div class="account-balance">
+                        {#if uiTests.isPassing}
+                        <span class="badge badge-success">&#10003; passing</span>
+                        {#else}
+                        <span class="badge badge-failed">&#10007; failing</span>
+                        {/if}
+                    </div>
+                </div>
+                <div class="note">failures: {uiTests.failures} &middot; errors: {uiTests.errors} &middot; skipped: {uiTests.skipped}{#if uiTests.commit} &middot; commit {uiTests.commit}{/if}</div>
+                {#else}
+                <p class="empty">No test results bundled in this build.</p>
+                {/if}
             </div>
 
         </div>

@@ -42,4 +42,9 @@ public interface ApiClient {
     @Path("/accounts/{id}")
     @Produces(MediaType.APPLICATION_JSON)
     Response deleteAccount(@PathParam("id") String id);
+
+    @GET
+    @Path("/tests")
+    @Produces(MediaType.APPLICATION_JSON)
+    TestSummary getApiTestResults();
 }

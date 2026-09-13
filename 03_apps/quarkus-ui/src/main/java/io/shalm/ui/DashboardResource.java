@@ -1,5 +1,6 @@
 package io.shalm.ui;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.qute.Template;
 import io.quarkus.qute.TemplateInstance;
 import io.smallrye.common.annotation.Blocking;
@@ -9,6 +10,8 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -21,6 +24,9 @@ public class DashboardResource {
 
     @Inject
     Template dashboard;
+
+    @Inject
+    ObjectMapper objectMapper;
 
     @RestClient
     ApiClient apiClient;
@@ -143,7 +149,9 @@ public class DashboardResource {
                 .data("transactions", txStore.getAll())
                 .data("message",      message)
                 .data("error",        effectiveError)
-                .data("activeTab",    activeTab);
+                .data("activeTab",    activeTab)
+                .data("apiTests",     loadApiTestResults())
+                .data("uiTests",      loadUiTestResults());
     }
 
     private List<LedgerEntry> buildLedger(List<AccountInfo> accounts) {
@@ -166,6 +174,23 @@ public class DashboardResource {
             return apiClient.getAllAccounts();
         } catch (Exception e) {
             return List.of();
+        }
+    }
+
+    private TestSummary loadApiTestResults() {
+        try {
+            return apiClient.getApiTestResults();
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private TestSummary loadUiTestResults() {
+        try (InputStream in = getClass().getResourceAsStream("/test-results.json")) {
+            if (in == null) return null;
+            return objectMapper.readValue(in, TestSummary.class);
+        } catch (IOException e) {
+            return null;
         }
     }
 
