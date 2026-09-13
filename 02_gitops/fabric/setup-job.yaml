@@ -186,7 +186,7 @@ spec:
                 --version 1.0 \
                 --sequence 4 \
                 --tls=false \
-                --output json 2>&1
+                --output json 2>&1 || echo "Sequence may already be committed, continuing..."
 
               # ── commit chaincode ──────────────────────────────────────────────
               echo "==> Committing chaincode definition..."
