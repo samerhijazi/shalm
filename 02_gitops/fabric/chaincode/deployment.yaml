@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: chaincode
-          image: ghcr.io/samerhijazi/shalm-chaincode:7145a9c8e95374ce39f5f2dc8f648eb44dca2c25
+          image: ghcr.io/samerhijazi/shalm-chaincode:0379a7312e73fc66245953cec780cc76d3d1ecb1
           ports:
             - containerPort: 9999
           env:
