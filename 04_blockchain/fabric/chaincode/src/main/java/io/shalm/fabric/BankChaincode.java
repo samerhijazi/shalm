@@ -2,28 +2,37 @@ package io.shalm.fabric;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.hyperledger.fabric.shim.ChaincodeBase;
+import org.hyperledger.fabric.metrics.Metrics;
 import org.hyperledger.fabric.shim.ChaincodeStub;
 import org.hyperledger.fabric.shim.ResponseUtils;
+import org.hyperledger.fabric.traces.Traces;
 
 import java.util.List;
+import java.util.Properties;
 
 public class BankChaincode extends ChaincodeBase {
 
     private final ObjectMapper mapper = new ObjectMapper();
 
     public BankChaincode(String[] args) {
-        // NettyChaincodeServer's constructor calls validateOptions(), and later, every
-        // incoming peer connection (ChatChaincodeWithPeer.connect -> connectToPeer ->
-        // newChannelBuilder -> getMaxInboundMessageSize) reads `this.props`. That field
-        // is normally populated by getChaincodeConfig(), which start(args) calls
-        // internally after processEnvironmentOptions()/processCommandLineOptions(args) --
-        // but start(args) is never called here since we construct the server manually.
-        // Skipping any one of these three leaves `props` null and every real invocation
-        // fails with "Chaincode config not available", even though the server itself
-        // starts up and listens just fine.
+        // We construct NettyChaincodeServer manually instead of calling the inherited
+        // start(args) (start() always runs in *client* mode -- it dials out to a peer --
+        // there's no way to make it listen for CCAAS). That means every step start(args)
+        // normally does before actually connecting must be replicated here, in the same
+        // order, or something inside ChaincodeBase's request-handling internals ends up
+        // reading state that was never initialized:
+        //   initializeLogging, processEnvironmentOptions, processCommandLineOptions,
+        //   validateOptions, getChaincodeConfig, Metrics.initialize, Traces.initialize
+        // Skipping getChaincodeConfig() throws "Chaincode config not available" on the
+        // first real invocation; skipping Traces.initialize() throws "No provider set"
+        // from Traces.getProvider() at the same point, one step later in the same call.
+        initializeLogging();
         processEnvironmentOptions();
         processCommandLineOptions(args);
-        getChaincodeConfig();
+        validateOptions();
+        Properties props = getChaincodeConfig();
+        Metrics.initialize(props);
+        Traces.initialize(props);
     }
 
     @Override
