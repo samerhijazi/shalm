@@ -114,7 +114,7 @@ spec:
               }
               EOF
 
-              tar czf /tmp/ccpkg/code.tar.gz -C /tmp connection.json
+              tar --mtime='@0' -czf /tmp/ccpkg/code.tar.gz -C /tmp connection.json
 
               cat > /tmp/ccpkg/metadata.json << 'EOF'
               {
@@ -123,7 +123,7 @@ spec:
               }
               EOF
 
-              tar czf /tmp/bank-transfer.tar.gz -C /tmp/ccpkg metadata.json code.tar.gz
+              tar --mtime='@0' -czf /tmp/bank-transfer.tar.gz -C /tmp/ccpkg metadata.json code.tar.gz
 
               # ── install on peer0-org1 ─────────────────────────────────────────
               echo "==> Installing chaincode on peer0-org1..."
@@ -155,7 +155,7 @@ spec:
                 --channelID mychannel \
                 --name bank-transfer \
                 --version 1.0 \
-                --sequence 1 \
+                --sequence 2 \
                 --package-id "$PACKAGE_ID" \
                 -o orderer.fabric.svc.cluster.local:7050 \
                 --tls=false 2>&1 || echo "Org1 approval may already exist"
@@ -169,7 +169,7 @@ spec:
                 --channelID mychannel \
                 --name bank-transfer \
                 --version 1.0 \
-                --sequence 1 \
+                --sequence 2 \
                 --package-id "$PACKAGE_ID" \
                 -o orderer.fabric.svc.cluster.local:7050 \
                 --tls=false 2>&1 || echo "Org2 approval may already exist"
@@ -183,7 +183,7 @@ spec:
                 --channelID mychannel \
                 --name bank-transfer \
                 --version 1.0 \
-                --sequence 1 \
+                --sequence 2 \
                 --tls=false \
                 --output json 2>&1
 
@@ -193,7 +193,7 @@ spec:
                 --channelID mychannel \
                 --name bank-transfer \
                 --version 1.0 \
-                --sequence 1 \
+                --sequence 2 \
                 --peerAddresses peer0-org1.fabric.svc.cluster.local:7051 \
                 --peerAddresses peer0-org2.fabric.svc.cluster.local:7051 \
                 -o orderer.fabric.svc.cluster.local:7050 \
