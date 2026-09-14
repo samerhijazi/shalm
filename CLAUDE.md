@@ -60,6 +60,13 @@ mvn quarkus:dev
 
 # Run tests
 mvn test
+
+# Fabric chaincode regression tests
+mvn -f 04_blockchain/fabric/chaincode/pom.xml test
+
+# Validate Fabric package ID or verify a live deployment
+./04_blockchain/fabric/chaincode/validate-release.sh
+./01_infrastructure/scripts/verify-fabric.sh
 ```
 
 Dockerfiles use a two-stage build: `maven:3.9.6-eclipse-temurin-21` → `eclipse-temurin:21-jre-jammy`.
@@ -142,8 +149,11 @@ AI agent:      FastAPI (namespace: ai, port 30810) — GET /summary (Loki), GET 
 - 2 orgs (Org1/Bank1, Org2/Bank2), 1 peer each, 1 SOLO orderer
 - Chaincode server entrypoint constructs `NettyChaincodeServer` manually (needed for real CCAAS server mode — `ChaincodeBase.start(args)` always dials out to a peer as a client, it never listens); the constructor must replicate `start(args)`'s exact real sequence — `initializeLogging → processEnvironmentOptions → processCommandLineOptions → validateOptions → getChaincodeConfig → Metrics.initialize → Traces.initialize` — or skipping any step throws a different exception one call deeper on the first real peer connection
 - Live Fabric queries are operational. CCAAS must register with the complete package ID from `02_gitops/fabric/chaincode-config.yaml`, and query methods must return values in the Fabric response payload rather than its message field.
+- Lifecycle name, version, sequence, label, and CCAAS address are sourced from `04_blockchain/fabric/chaincode/release.env`. For a behavior change, bump version and sequence, run `update-release-config.sh`, and confirm with `validate-release.sh`; Fabric's `calculatepackageid` command is authoritative.
 - Peer/orderer ledger storage is PersistentVolumeClaims (`local-path` StorageClass, `01_infrastructure/base/local-path-provisioner.yaml`) — not `emptyDir`, so a pod restart doesn't wipe the channel
-- `fabric-setup` Job (`02_gitops/fabric/setup-job.yaml`) creates/joins `mychannel` and installs/approves/commits the chaincode — mounts full MSP dirs (cacerts/signcerts/keystore/tlscacerts) for the org1/org2 admin identities, not just `config.yaml`
+- `fabric-setup` is an Argo CD Sync hook (`02_gitops/fabric/setup-job.yaml`): it creates/joins `mychannel`, checks the canonical package ID, and installs/approves/commits the chaincode. It mounts full MSP dirs (cacerts/signcerts/keystore/tlscacerts) for both admin identities, not just `config.yaml`.
+- Chaincode CI runs unit tests, release metadata validation, and a disposable two-organization CCAAS integration test before publishing an image. Argo CD follows with a PostSync API/UI smoke test (`02_gitops/fabric/smoke-test-job.yaml`).
+- `/fabric/health` performs a real ledger query; the API readiness check includes Fabric when `FABRIC_ENABLED=true`. Run `01_infrastructure/scripts/verify-fabric.sh` after a rollout to check deployments, all four seeded balances, and the rendered Blockchain tab.
 - **Java chaincode** (`fabric-chaincode-java` SDK — not Quarkus): `InitLedger`, `Transfer`, `QueryBalance`, `createAccount`, `getAccount`, `deposit`, `deleteAccount`
 - API calls Fabric via `FabricGatewayService` using gRPC (port 7051)
 
