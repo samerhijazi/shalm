@@ -73,47 +73,47 @@ git pull --rebase origin main && git push origin main
 # git commit -m "Phase 0+1: repo bootstrap, observability stack"
 
 # Phase 2 — Quarkus API
-git add 03_apps/quarkus-api/ 02_gitops/quarkus-app/ 02_gitops/root-app/quarkus-api-app.yaml 05_cicd/github-actions/quarkus-api.yml 03_implementation-status.md 00_docs/Commands.md
+git add 03_apps/quarkus-api/ 02_gitops/quarkus-app/ 02_gitops/root-app/quarkus-api-app.yaml 05_cicd/github-actions/quarkus-api.yml 00_roadmap_runbook.md 00_docs/Commands.md
 git commit -m "Phase 2: Quarkus API — REST, metrics, structured logs, GitOps, CI"
 git push origin main
 
 # Phase 3 — Quarkus UI
-git add 03_apps/quarkus-ui/ 02_gitops/quarkus-ui/ 02_gitops/root-app/quarkus-ui-app.yaml 05_cicd/github-actions/quarkus-ui.yml 03_implementation-status.md
+git add 03_apps/quarkus-ui/ 02_gitops/quarkus-ui/ 02_gitops/root-app/quarkus-ui-app.yaml 05_cicd/github-actions/quarkus-ui.yml 00_roadmap_runbook.md
 git commit -m "Phase 3: Quarkus UI — Qute templates, transfer form, balance view"
 git push origin main
 
 # Phase 4 — Hyperledger Fabric
-git add 04_blockchain/fabric/ 02_gitops/fabric/ 02_gitops/root-app/fabric-app.yaml 03_implementation-status.md
+git add 04_blockchain/fabric/ 02_gitops/fabric/ 02_gitops/root-app/fabric-app.yaml 00_roadmap_runbook.md
 git commit -m "Phase 4: Hyperledger Fabric — 2 orgs, Go chaincode, K8s manifests"
 git push origin main
 
 # Phase 5 — Istio
-git add 02_gitops/istio/ 02_gitops/root-app/istio-app.yaml 03_implementation-status.md
+git add 02_gitops/istio/ 02_gitops/root-app/istio-app.yaml 00_roadmap_runbook.md
 git commit -m "Phase 5: Istio — sidecar injection, ingress gateway, virtual services"
 git push origin main
 
 # Phase 6 — Hyperledger Besu
-git add 04_blockchain/besu/ 02_gitops/besu/ 02_gitops/root-app/besu-app.yaml 03_implementation-status.md
+git add 04_blockchain/besu/ 02_gitops/besu/ 02_gitops/root-app/besu-app.yaml 00_roadmap_runbook.md
 git commit -m "Phase 6: Hyperledger Besu — 3-node QBFT, Solidity contract"
 git push origin main
 
 # Phase 7 — Identity Service
-git add 03_apps/identity-service/ 02_gitops/identity/ 02_gitops/root-app/identity-app.yaml 05_cicd/github-actions/identity-service.yml 03_implementation-status.md
+git add 03_apps/identity-service/ 02_gitops/identity/ 02_gitops/root-app/identity-app.yaml 05_cicd/github-actions/identity-service.yml 00_roadmap_runbook.md
 git commit -m "Phase 7: Identity Service — OIDC mock, JWT, API validation"
 git push origin main
 
 # Phase 8 — CI/CD
-git add 05_cicd/ 03_implementation-status.md
+git add 05_cicd/ 00_roadmap_runbook.md
 git commit -m "Phase 8: CI/CD — GitHub Actions for all apps, GHCR push, manifest patch"
 git push origin main
 
 # Phase 9 — SRE Layer
-git add 02_gitops/observability/alerts/ 01_infrastructure/scripts/ 03_implementation-status.md
+git add 02_gitops/observability/alerts/ 01_infrastructure/scripts/ 00_roadmap_runbook.md
 git commit -m "Phase 9: SRE — PrometheusRules, Alertmanager, failure scripts"
 git push origin main
 
 # Phase 10 — AI Observability
-git add 06_ai/ 02_gitops/ai/ 02_gitops/root-app/ai-app.yaml 05_cicd/github-actions/ai-agent.yml 03_implementation-status.md
+git add 06_ai/ 02_gitops/ai/ 02_gitops/root-app/ai-app.yaml 05_cicd/github-actions/ai-agent.yml 00_roadmap_runbook.md
 git commit -m "Phase 10: AI Observability — FastAPI summary + anomaly detection"
 git push origin main
 ```

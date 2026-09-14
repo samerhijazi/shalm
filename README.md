@@ -62,6 +62,8 @@ CI/CD:          GitHub Actions — multi-arch build (linux/amd64,linux/arm64) �
 | Kiali        | http://192.168.105.3:30088 | —                     |
 | ArgoCD       | http://192.168.105.3:30080 | admin / `GhPtA0-v7iFqnPkX` |
 
+The Quarkus UI also serves a standalone `/architecture` page — a static platform diagram plus this same service table — linked from the dashboard header.
+
 ---
 
 ## Tech Stack
@@ -97,7 +99,7 @@ CI/CD:          GitHub Actions — multi-arch build (linux/amd64,linux/arm64) �
 | 9 | SRE Layer                     | Done      |
 | 10| AI Observability Agent        | Done      |
 
-Phases 6 (Besu) and 7 (Identity) intentionally skipped. Fabric channel + chaincode are committed and healthy, but live invocations are blocked on a suspected Istio/Envoy sidecar issue with Fabric's long-lived event streams — see `03_implementation-status.md`'s "Fabric Live-Transaction Blocker" section for the full writeup and next diagnostic steps. All other phases complete.
+Phases 6 (Besu) and 7 (Identity) intentionally skipped. Fabric channel + chaincode are committed and healthy, but live invocations are blocked on a suspected Istio/Envoy sidecar issue with Fabric's long-lived event streams — see `00_roadmap_runbook.md`'s "Fabric Live-Transaction Blocker" section for the full writeup and next diagnostic steps. All other phases complete.
 
 ---
 

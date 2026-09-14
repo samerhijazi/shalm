@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shalm Platform — Architecture</title>
+    <style>
+        :root {
+            --bg:             #f1f5f9;
+            --surface:        #ffffff;
+            --surface-2:      #f8fafc;
+            --border:         #e2e8f0;
+            --border-2:       #cbd5e1;
+            --text:           #1e293b;
+            --muted:          #64748b;
+            --primary:        #0284c7;
+            --primary-hover:  #0369a1;
+            --primary-light:  #e0f2fe;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+        /* ── Header ── */
+        header {
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            padding: 0.9rem 2rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        header h1 { font-size: 1.15rem; font-weight: 700; color: var(--text); }
+        header .tagline { font-size: 0.8rem; color: var(--muted); }
+        .header-actions { margin-left: auto; display: flex; align-items: center; gap: 0.9rem; }
+        .btn-sync {
+            background: var(--primary-light);
+            color: var(--primary);
+            border: 1px solid var(--primary);
+            border-radius: 6px;
+            padding: 0.4rem 1rem;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            white-space: nowrap;
+            transition: background 0.12s, color 0.12s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+        }
+        .btn-sync:hover { background: var(--primary); color: #fff; }
+
+        main { max-width: 1050px; margin: 0 auto; padding: 2rem 1.5rem; }
+
+        /* ── Card ── */
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin-bottom: 1.25rem;
+        }
+        .card h2 {
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--muted);
+            margin-bottom: 1.25rem;
+        }
+
+        .diagram-wrap { overflow-x: auto; }
+        .diagram-wrap svg { width: 100%; height: auto; min-width: 720px; display: block; }
+
+        /* ── Table ── */
+        .table-wrap { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+        thead th {
+            text-align: left;
+            color: var(--muted);
+            font-weight: 600;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 0.5rem 0.75rem;
+            border-bottom: 2px solid var(--border);
+        }
+        tbody td { padding: 0.65rem 0.75rem; border-bottom: 1px solid var(--border); color: var(--text); }
+        tbody tr:last-child td { border-bottom: none; }
+        tbody tr:hover td { background: var(--surface-2); }
+        tbody td a { color: var(--primary); text-decoration: none; }
+        tbody td a:hover { text-decoration: underline; }
+        .cred { font-family: monospace; font-size: 0.78rem; color: var(--muted); }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Shalm</h1>
+    <span class="tagline">Platform Architecture</span>
+    <div class="header-actions">
+        <a href="/" class="btn-sync">&larr; Dashboard</a>
+    </div>
+</header>
+
+<main>
+
+    <div class="card">
+        <h2>Platform Architecture</h2>
+        <div class="diagram-wrap">
+            <svg viewBox="0 0 1000 560" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="arch-title arch-desc">
+                <title id="arch-title">Shalm platform architecture diagram</title>
+                <desc id="arch-desc">A developer pushes code to the GitHub Repo. CI builds an image, pushes it to GHCR, and commits a manifest patch back to the repo. ArgoCD, running inside the Kubernetes cluster, watches the repo and applies the updated manifests; separately, each node's kubelet pulls the actual image from GHCR when scheduling pods. The cluster runs the Quarkus UI, Quarkus API, Hyperledger Fabric network, and an observability stack of Prometheus, Grafana, Alertmanager, Loki, Jaeger and Kiali. Fabric's Envoy sidecar emits traces to Jaeger.</desc>
+
+                <defs>
+                    <marker id="arrow-slate" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                        <path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"></path>
+                    </marker>
+                    <marker id="arrow-blue" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                        <path d="M0,0 L10,5 L0,10 z" fill="var(--primary)"></path>
+                    </marker>
+                    <marker id="arrow-amber" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                        <path d="M0,0 L10,5 L0,10 z" fill="#9a3412"></path>
+                    </marker>
+                    <style>
+                        text { font-family: system-ui, sans-serif; }
+                        .box-title { font-size: 13px; font-weight: 700; }
+                        .box-sub   { font-size: 10.5px; }
+                        .edge-label { font-size: 11px; }
+                        .cluster-label { font-size: 12px; font-weight: 700; letter-spacing: 0.08em; }
+                    </style>
+                </defs>
+
+                <!-- ── Top row: Developer → GitHub Repo ── -->
+                <rect x="90" y="24" width="200" height="52" rx="8" fill="var(--surface)" stroke="var(--border-2)" stroke-width="1.5"></rect>
+                <text x="190" y="46" text-anchor="middle" class="box-title" fill="var(--text)">Developer / User</text>
+                <text x="190" y="62" text-anchor="middle" class="box-sub" fill="var(--muted)">pushes code</text>
+
+                <rect x="390" y="24" width="220" height="52" rx="8" fill="var(--surface)" stroke="var(--border-2)" stroke-width="1.5"></rect>
+                <text x="500" y="46" text-anchor="middle" class="box-title" fill="var(--text)">GitHub Repo</text>
+                <text x="500" y="62" text-anchor="middle" class="box-sub" fill="var(--muted)">samerhijazi/shalm</text>
+
+                <line x1="290" y1="50" x2="384" y2="50" stroke="var(--muted)" stroke-width="1.75" marker-end="url(#arrow-slate)"></line>
+                <text x="337" y="40" text-anchor="middle" class="edge-label" fill="var(--muted)">git push</text>
+
+                <rect x="690" y="24" width="220" height="52" rx="8" fill="var(--surface)" stroke="var(--border-2)" stroke-width="1.5"></rect>
+                <text x="800" y="46" text-anchor="middle" class="box-title" fill="var(--text)">GHCR</text>
+                <text x="800" y="62" text-anchor="middle" class="box-sub" fill="var(--muted)">ghcr.io/samerhijazi</text>
+
+                <line x1="610" y1="40" x2="684" y2="40" stroke="var(--muted)" stroke-width="1.75" marker-end="url(#arrow-slate)"></line>
+                <text x="647" y="30" text-anchor="middle" class="edge-label" fill="var(--muted)">CI build + push image</text>
+
+                <line x1="684" y1="64" x2="610" y2="64" stroke="var(--muted)" stroke-width="1.75" marker-end="url(#arrow-slate)"></line>
+                <text x="647" y="76" text-anchor="middle" class="edge-label" fill="var(--muted)">CI patches manifest tag</text>
+
+                <!-- ── GitOps deploy arrow into cluster: ArgoCD watches the repo (image pulls are separate, shown below) ── -->
+                <line x1="500" y1="76" x2="500" y2="112" stroke="var(--primary)" stroke-width="2" stroke-dasharray="7,5" marker-end="url(#arrow-blue)"></line>
+
+                <!-- ── Image pull: kubelet fetches the image from GHCR when scheduling the pod — NOT an ArgoCD action ── -->
+                <line x1="800" y1="76" x2="800" y2="222" stroke="var(--muted)" stroke-width="1.75" stroke-dasharray="7,5" marker-end="url(#arrow-slate)"></line>
+                <text x="800" y="140" text-anchor="middle" class="edge-label" fill="var(--muted)">image pull (kubelet)</text>
+
+                <!-- ── Kubernetes cluster boundary ── -->
+                <rect x="40" y="116" width="920" height="374" rx="14" fill="none" stroke="var(--muted)" stroke-width="1.5" stroke-dasharray="6,5"></rect>
+                <text x="62" y="138" class="cluster-label" fill="var(--muted)">KUBERNETES CLUSTER</text>
+
+                <!-- ── ArgoCD (runs inside the cluster, namespace argocd) ── -->
+                <rect x="390" y="150" width="220" height="48" rx="8" fill="var(--surface)" stroke="var(--border-2)" stroke-width="1.5"></rect>
+                <text x="500" y="170" text-anchor="middle" class="box-title" fill="var(--text)">ArgoCD</text>
+                <text x="500" y="186" text-anchor="middle" class="box-sub" fill="var(--muted)">App-of-Apps GitOps &middot; ns: argocd</text>
+
+                <line x1="500" y1="198" x2="500" y2="222" stroke="var(--primary)" stroke-width="2" stroke-dasharray="7,5" marker-end="url(#arrow-blue)"></line>
+
+                <!-- ── App-flow row ── -->
+                <rect x="70" y="228" width="230" height="65" rx="8" fill="var(--primary-light)" stroke="var(--primary-hover)" stroke-width="1.5"></rect>
+                <text x="185" y="255" text-anchor="middle" class="box-title" fill="var(--primary-hover)">Quarkus UI</text>
+                <text x="185" y="272" text-anchor="middle" class="box-sub" fill="var(--primary-hover)">Qute, :30801</text>
+
+                <rect x="390" y="228" width="230" height="65" rx="8" fill="var(--primary-light)" stroke="var(--primary-hover)" stroke-width="1.5"></rect>
+                <text x="505" y="255" text-anchor="middle" class="box-title" fill="var(--primary-hover)">Quarkus API</text>
+                <text x="505" y="272" text-anchor="middle" class="box-sub" fill="var(--primary-hover)">REST, :30800</text>
+
+                <rect x="710" y="228" width="230" height="65" rx="8" fill="var(--primary-light)" stroke="var(--primary-hover)" stroke-width="1.5"></rect>
+                <text x="825" y="255" text-anchor="middle" class="box-title" fill="var(--primary-hover)">Hyperledger Fabric</text>
+                <text x="825" y="272" text-anchor="middle" class="box-sub" fill="var(--primary-hover)">Org1+Org2 peers, SOLO orderer</text>
+
+                <line x1="300" y1="261" x2="384" y2="261" stroke="var(--muted)" stroke-width="1.75" marker-end="url(#arrow-slate)"></line>
+                <text x="342" y="251" text-anchor="middle" class="edge-label" fill="var(--muted)">REST</text>
+
+                <line x1="620" y1="261" x2="704" y2="261" stroke="var(--muted)" stroke-width="1.75" marker-end="url(#arrow-slate)"></line>
+                <text x="662" y="251" text-anchor="middle" class="edge-label" fill="var(--muted)">gRPC</text>
+
+                <!-- ── Observability row ── -->
+                <rect x="85" y="398" width="130" height="55" rx="8" fill="#fff7ed" stroke="#fdba74" stroke-width="1.5"></rect>
+                <text x="150" y="418" text-anchor="middle" class="box-title" fill="#9a3412">Loki</text>
+                <text x="150" y="434" text-anchor="middle" class="box-sub" fill="#9a3412">+ Promtail (logs)</text>
+
+                <rect x="233" y="398" width="115" height="55" rx="8" fill="#fff7ed" stroke="#fdba74" stroke-width="1.5"></rect>
+                <text x="291" y="422" text-anchor="middle" class="box-title" fill="#9a3412">Grafana</text>
+                <text x="291" y="438" text-anchor="middle" class="box-sub" fill="#9a3412">:30300</text>
+
+                <rect x="366" y="398" width="135" height="55" rx="8" fill="#fff7ed" stroke="#fdba74" stroke-width="1.5"></rect>
+                <text x="434" y="422" text-anchor="middle" class="box-title" fill="#9a3412">Prometheus</text>
+                <text x="434" y="438" text-anchor="middle" class="box-sub" fill="#9a3412">:30090</text>
+
+                <rect x="519" y="398" width="145" height="55" rx="8" fill="#fff7ed" stroke="#fdba74" stroke-width="1.5"></rect>
+                <text x="592" y="422" text-anchor="middle" class="box-title" fill="#9a3412">Alertmanager</text>
+                <text x="592" y="438" text-anchor="middle" class="box-sub" fill="#9a3412">:30093</text>
+
+                <rect x="682" y="398" width="115" height="55" rx="8" fill="#fff7ed" stroke="#fdba74" stroke-width="1.5"></rect>
+                <text x="740" y="422" text-anchor="middle" class="box-title" fill="#9a3412">Jaeger</text>
+                <text x="740" y="438" text-anchor="middle" class="box-sub" fill="#9a3412">:30686</text>
+
+                <rect x="815" y="398" width="100" height="55" rx="8" fill="#fff7ed" stroke="#fdba74" stroke-width="1.5"></rect>
+                <text x="865" y="422" text-anchor="middle" class="box-title" fill="#9a3412">Kiali</text>
+                <text x="865" y="438" text-anchor="middle" class="box-sub" fill="#9a3412">:30088</text>
+
+                <line x1="215" y1="425" x2="229" y2="425" stroke="#9a3412" stroke-width="1.75" marker-end="url(#arrow-amber)"></line>
+                <line x1="366" y1="425" x2="352" y2="425" stroke="#9a3412" stroke-width="1.75" marker-end="url(#arrow-amber)"></line>
+                <line x1="501" y1="425" x2="515" y2="425" stroke="#9a3412" stroke-width="1.75" marker-end="url(#arrow-amber)"></line>
+                <line x1="797" y1="425" x2="811" y2="425" stroke="#9a3412" stroke-width="1.75" marker-end="url(#arrow-amber)"></line>
+
+                <!-- ── Dotted metrics arrow from Quarkus API; traces from Fabric's Envoy sidecar ── -->
+                <line x1="505" y1="293" x2="434" y2="392" stroke="#9a3412" stroke-width="1.5" stroke-dasharray="2,4" marker-end="url(#arrow-amber)"></line>
+                <text x="470" y="343" text-anchor="middle" class="edge-label" fill="#9a3412">metrics scrape</text>
+
+                <line x1="825" y1="293" x2="740" y2="392" stroke="#9a3412" stroke-width="1.5" stroke-dasharray="2,4" marker-end="url(#arrow-amber)"></line>
+                <text x="783" y="343" text-anchor="middle" class="edge-label" fill="#9a3412">Envoy sidecar traces</text>
+
+                <!-- ── Legend ── -->
+                <line x1="70" y1="522" x2="104" y2="522" stroke="var(--muted)" stroke-width="1.75"></line>
+                <text x="112" y="526" class="edge-label" fill="var(--muted)">solid = data flow</text>
+
+                <line x1="255" y1="522" x2="289" y2="522" stroke="var(--primary)" stroke-width="2" stroke-dasharray="7,5"></line>
+                <text x="297" y="526" class="edge-label" fill="var(--muted)">dashed blue = GitOps sync</text>
+
+                <line x1="490" y1="522" x2="524" y2="522" stroke="var(--muted)" stroke-width="1.75" stroke-dasharray="7,5"></line>
+                <text x="532" y="526" class="edge-label" fill="var(--muted)">dashed grey = image pull</text>
+
+                <line x1="725" y1="522" x2="759" y2="522" stroke="#9a3412" stroke-width="1.5" stroke-dasharray="2,4"></line>
+                <text x="767" y="526" class="edge-label" fill="var(--muted)">dotted amber = metrics/traces</text>
+            </svg>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>Service URLs</h2>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Service</th>
+                        <th>URL</th>
+                        <th>Credentials</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Quarkus UI</td>
+                        <td><a href="http://192.168.105.3:30801">http://192.168.105.3:30801</a></td>
+                        <td class="cred">&mdash;</td>
+                    </tr>
+                    <tr>
+                        <td>Quarkus API</td>
+                        <td><a href="http://192.168.105.3:30800">http://192.168.105.3:30800</a></td>
+                        <td class="cred">&mdash;</td>
+                    </tr>
+                    <tr>
+                        <td>Grafana</td>
+                        <td><a href="http://192.168.105.3:30300">http://192.168.105.3:30300</a></td>
+                        <td class="cred">admin / shalm-admin</td>
+                    </tr>
+                    <tr>
+                        <td>Prometheus</td>
+                        <td><a href="http://192.168.105.3:30090">http://192.168.105.3:30090</a></td>
+                        <td class="cred">&mdash;</td>
+                    </tr>
+                    <tr>
+                        <td>Alertmanager</td>
+                        <td><a href="http://192.168.105.3:30093">http://192.168.105.3:30093</a></td>
+                        <td class="cred">&mdash;</td>
+                    </tr>
+                    <tr>
+                        <td>Jaeger</td>
+                        <td><a href="http://192.168.105.3:30686">http://192.168.105.3:30686</a></td>
+                        <td class="cred">&mdash;</td>
+                    </tr>
+                    <tr>
+                        <td>Kiali</td>
+                        <td><a href="http://192.168.105.3:30088">http://192.168.105.3:30088</a></td>
+                        <td class="cred">&mdash;</td>
+                    </tr>
+                    <tr>
+                        <td>ArgoCD</td>
+                        <td><a href="http://192.168.105.3:30080">http://192.168.105.3:30080</a></td>
+                        <td class="cred">admin / GhPtA0-v7iFqnPkX</td>
+                    </tr>
+                    <tr>
+                        <td>GitHub Repo</td>
+                        <td><a href="https://github.com/samerhijazi/shalm">https://github.com/samerhijazi/shalm</a></td>
+                        <td class="cred">&mdash;</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</main>
+
+</body>
+</html>

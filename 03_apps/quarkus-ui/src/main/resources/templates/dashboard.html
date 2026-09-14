@@ -41,6 +41,9 @@
         }
         header h1 { font-size: 1.15rem; font-weight: 700; color: var(--text); }
         header .tagline { font-size: 0.8rem; color: var(--muted); }
+        .header-actions { margin-left: auto; display: flex; align-items: center; gap: 0.9rem; }
+        .link-muted { font-size: 0.8rem; color: var(--muted); text-decoration: none; font-weight: 600; }
+        .link-muted:hover { color: var(--primary); }
 
         main { max-width: 1050px; margin: 0 auto; padding: 2rem 1.5rem; }
 
@@ -237,7 +240,6 @@
 
         /* ── Sync button ── */
         .btn-sync {
-            margin-left: auto;
             background: var(--primary-light);
             color: var(--primary);
             border: 1px solid var(--primary);
@@ -266,7 +268,10 @@
 <header>
     <h1>Shalm</h1>
     <span class="tagline">Cross-Bank Transfer Platform</span>
-    <a href="/" class="btn-sync">&#8635; Sync with API</a>
+    <div class="header-actions">
+        <a href="/architecture" class="link-muted">Architecture</a>
+        <a href="/" class="btn-sync">&#8635; Sync with API</a>
+    </div>
 </header>
 
 <main>

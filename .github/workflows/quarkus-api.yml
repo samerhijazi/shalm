@@ -81,7 +81,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add 02_gitops/quarkus-app/deployment.yaml
+          git add 02_gitops/quarkus-app/deployment.yaml 03_apps/quarkus-api/src/main/resources/test-results.json
           git commit -m "ci: update quarkus-api image to ${{ github.sha }}"
           git pull --rebase origin main
           git push origin main

@@ -4,14 +4,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Where to Start
 
-Read `03_implementation-status.md` first — it has the current phase, what's done, and the live rules that apply to every phase going forward.
+Read `00_roadmap_runbook.md` first — it has the current phase, what's done, and the live rules that apply to every phase going forward.
 
 ## Documentation Rule (mandatory)
 
 After **any** change to the platform — new feature, bug fix, config change, new service, phase completion, or infrastructure update — you **must** update all three:
 
 1. **`CLAUDE.md`** — keep Platform URLs, Architecture, Known Issues, and component descriptions current
-2. **`03_implementation-status.md`** — update the phase table, Current State section, and Live Services table
+2. **`00_roadmap_runbook.md`** — update the phase table, Current State section, and Live Services table
 3. **`README.md`** — keep Live Services table, Phase Status table, and Architecture summary in sync with the above two files
 
 Do not commit without updating these three files. They are the single source of truth for future sessions.
@@ -125,6 +125,7 @@ AI agent:      FastAPI (namespace: ai, port 30810) — GET /summary (Loki), GET 
 
 ### Quarkus UI (`03_apps/quarkus-ui/`, namespace `quarkus-ui`)
 
+- Standalone `/architecture` page (`ArchitectureResource.java` + `templates/architecture.html`) — static platform architecture diagram (hand-built inline SVG) and a service URLs/credentials table; linked from the dashboard header, not part of the tab bar
 - Single Qute template: `dashboard.html` — 6 tabs:
   - **World State** (default): table comparing API balance vs Fabric on-chain balance per account; Fabric column shows "N/A" only if `FABRIC_ENABLED=false` or the peer is unreachable
   - **Blockchain**: Fabric-only ledger view + per-account sync status badge
@@ -140,7 +141,7 @@ AI agent:      FastAPI (namespace: ai, port 30810) — GET /summary (Loki), GET 
 
 - 2 orgs (Org1/Bank1, Org2/Bank2), 1 peer each, 1 SOLO orderer
 - Chaincode server entrypoint constructs `NettyChaincodeServer` manually (needed for real CCAAS server mode — `ChaincodeBase.start(args)` always dials out to a peer as a client, it never listens); the constructor must replicate `start(args)`'s exact real sequence — `initializeLogging → processEnvironmentOptions → processCommandLineOptions → validateOptions → getChaincodeConfig → Metrics.initialize → Traces.initialize` — or skipping any step throws a different exception one call deeper on the first real peer connection
-- **Fabric live transactions are currently blocked** on a suspected Istio/Envoy sidecar issue with Fabric's long-lived event-listening gRPC streams (not an app/manifest bug) — see the "Fabric Live-Transaction Blocker" section in `03_implementation-status.md` for full details and where to resume
+- **Fabric live transactions are currently blocked** on a suspected Istio/Envoy sidecar issue with Fabric's long-lived event-listening gRPC streams (not an app/manifest bug) — see the "Fabric Live-Transaction Blocker" section in `00_roadmap_runbook.md` for full details and where to resume
 - Peer/orderer ledger storage is PersistentVolumeClaims (`local-path` StorageClass, `01_infrastructure/base/local-path-provisioner.yaml`) — not `emptyDir`, so a pod restart doesn't wipe the channel
 - `fabric-setup` Job (`02_gitops/fabric/setup-job.yaml`) creates/joins `mychannel` and installs/approves/commits the chaincode — mounts full MSP dirs (cacerts/signcerts/keystore/tlscacerts) for the org1/org2 admin identities, not just `config.yaml`
 - **Java chaincode** (`fabric-chaincode-java` SDK — not Quarkus): `InitLedger`, `Transfer`, `QueryBalance`, `createAccount`, `getAccount`, `deposit`, `deleteAccount`
