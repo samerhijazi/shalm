@@ -60,6 +60,16 @@ public class FabricGatewayService {
     @ConfigProperty(name = "fabric.chaincode.version", defaultValue = "unknown")
     String chaincodeVersion;
 
+    // The channel's default endorsement policy requires every org to endorse any
+    // state-changing invoke on this chaincode (confirmed by the CI integration test
+    // needing to explicitly address both org peers for InitLedger). Gateway SDK
+    // service discovery has been observed failing to derive this combination on its
+    // own ("no combination of peers can be derived which satisfy the endorsement
+    // policy"), so submissions name the endorsing orgs explicitly instead of relying
+    // on discovery.
+    @ConfigProperty(name = "fabric.endorsing.orgs", defaultValue = "Org1MSP,Org2MSP")
+    String endorsingOrgsCsv;
+
     private Gateway gateway;
     private ManagedChannel grpcChannel;
     private Contract contract;
@@ -166,6 +176,7 @@ public class FabricGatewayService {
     public FabricTransferResult transfer(String fromId, String toId, int amount) throws Exception {
         Transaction tx = contract.newProposal("Transfer")
                 .addArguments(fromId, toId, String.valueOf(amount))
+                .setEndorsingOrganizations(endorsingOrgsCsv.split(","))
                 .build()
                 .endorse();
         SubmittedTransaction submitted = tx.submitAsync();
