@@ -94,13 +94,20 @@ jobs:
             -n "$CHAINCODE_NAME" \
             --peerAddresses localhost:7051 \
             --tlsRootCertFiles "$CORE_PEER_TLS_ROOTCERT_FILE" \
+            --waitForEvent \
+            --waitForEventTimeout 30s \
             -c '{"function":"InitLedger","Args":[]}'
 
-          sleep 3
-          balance="$(peer chaincode query \
-            -C mychannel \
-            -n "$CHAINCODE_NAME" \
-            -c '{"function":"QueryBalance","Args":["ACC-B1-001"]}')"
+          balance=""
+          for attempt in 1 2 3 4 5 6; do
+            balance="$(peer chaincode query \
+              -C mychannel \
+              -n "$CHAINCODE_NAME" \
+              -c '{"function":"QueryBalance","Args":["ACC-B1-001"]}' 2>/dev/null || true)"
+            [ "$balance" = "1000" ] && break
+            echo "Balance not committed yet (attempt $attempt); retrying..."
+            sleep 3
+          done
           test "$balance" = "1000"
 
   build-push:
