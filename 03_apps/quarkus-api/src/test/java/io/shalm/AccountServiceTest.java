@@ -58,6 +58,14 @@ class AccountServiceTest {
     }
 
     @Test
+    void transfer_updatesTimestampOnBothAccounts() {
+        assertNotNull(service.getAccount("ACC-B1-001").updatedAt);
+        assertTrue(service.transfer("ACC-B1-001", "ACC-B2-001", 100));
+        assertNotNull(service.getAccount("ACC-B1-001").updatedAt);
+        assertNotNull(service.getAccount("ACC-B2-001").updatedAt);
+    }
+
+    @Test
     void transfer_insufficientFundsFails() {
         assertFalse(service.transfer("ACC-B1-002", "ACC-B1-001", 999999));
         assertEquals(500, service.getAccount("ACC-B1-002").balance);

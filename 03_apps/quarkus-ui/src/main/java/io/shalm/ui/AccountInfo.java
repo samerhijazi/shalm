@@ -5,6 +5,7 @@ public class AccountInfo {
     public String owner;
     public String bank;
     public int balance;
+    public String updatedAt;
 
     public String getLabel() {
         return owner + " (" + bank + ") — " + id;

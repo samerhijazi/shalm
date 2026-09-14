@@ -25,10 +25,15 @@
             --error-bg:       #fef2f2;
             --error-border:   #fecaca;
             --error-text:     #991b1b;
+            --warning-bg:     #fef3c7;
+            --warning-border: #fcd34d;
+            --warning-text:   #92400e;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+        a { color: var(--primary); }
+        :focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 
         /* ── Header ── */
         header {
@@ -45,7 +50,11 @@
         .link-muted { font-size: 0.8rem; color: var(--muted); text-decoration: none; font-weight: 600; }
         .link-muted:hover { color: var(--primary); }
 
-        main { max-width: 1050px; margin: 0 auto; padding: 2rem 1.5rem; }
+        main { max-width: 1200px; margin: 0 auto; padding: 2rem 1.5rem; }
+
+        .page-heading { margin-bottom: 1.5rem; }
+        .page-heading h2 { font-size: 1.4rem; font-weight: 700; color: var(--text); margin-bottom: 0.3rem; }
+        .page-heading p { font-size: 0.875rem; color: var(--muted); }
 
         /* ── Alerts ── */
         .alert {
@@ -57,7 +66,7 @@
         }
         .alert-success { background: var(--success-bg); border-color: var(--success-border); color: var(--success-text); }
         .alert-error   { background: var(--error-bg);   border-color: var(--error-border);   color: var(--error-text); }
-        .alert-warning { background: #fef3c7; border-color: #fcd34d; color: #92400e; }
+        .alert-warning { background: var(--warning-bg); border-color: var(--warning-border); color: var(--warning-text); }
 
         /* ── Tabs ── */
         .tabs {
@@ -87,6 +96,29 @@
         .tab-content { display: none; }
         .tab-content.visible { display: block; }
 
+        /* ── Subtabs (Ledger / Operations) ── */
+        .subtabs {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 1.25rem;
+            border-bottom: 2px solid var(--border);
+        }
+        .subtab-btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            background: transparent;
+            color: var(--muted);
+            font-size: 0.82rem;
+            font-weight: 600;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -2px;
+        }
+        .subtab-btn:hover:not(.active) { color: var(--text); }
+        .subtab-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
+        .subtab-content { display: none; }
+        .subtab-content.visible { display: block; }
+
         /* ── Section label ── */
         .section-label {
             font-size: 0.7rem;
@@ -96,6 +128,30 @@
             color: var(--muted);
             margin-bottom: 0.75rem;
         }
+
+        /* ── Stat cards (Dashboard) ── */
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        .stat-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 1rem 1.25rem;
+        }
+        .stat-card .stat-label {
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--muted);
+            margin-bottom: 0.4rem;
+        }
+        .stat-card .stat-value { font-size: 1.5rem; font-weight: 700; color: var(--text); }
+        .stat-card .stat-sub { font-size: 0.75rem; color: var(--muted); margin-top: 0.2rem; }
 
         /* ── Bank / Account cards ── */
         .banks { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-bottom: 0; }
@@ -152,14 +208,17 @@
             color: var(--muted);
             margin-bottom: 1.25rem;
         }
+        .card-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; }
+        .card-head h2 { margin-bottom: 0; }
 
         /* ── Forms ── */
         .form-row { display: flex; gap: 1rem; align-items: flex-end; flex-wrap: wrap; }
         .form-group { display: flex; flex-direction: column; gap: 0.35rem; flex: 1; min-width: 130px; }
         .form-group label { font-size: 0.75rem; font-weight: 500; color: var(--muted); }
+        .form-group .hint { font-size: 0.72rem; color: var(--muted); }
         .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
 
-        input[type=text], input[type=number], select {
+        input[type=text], input[type=number], input[type=search], select {
             background: var(--surface);
             border: 1px solid var(--border-2);
             border-radius: 6px;
@@ -182,10 +241,14 @@
             white-space: nowrap;
             transition: background 0.12s;
         }
+        .btn:disabled { opacity: 0.6; cursor: not-allowed; }
         .btn-primary { background: var(--primary); color: #fff; }
-        .btn-primary:hover { background: var(--primary-hover); }
+        .btn-primary:hover:not(:disabled) { background: var(--primary-hover); }
         .btn-danger  { background: var(--danger);  color: #fff; }
-        .btn-danger:hover  { background: var(--danger-hover); }
+        .btn-danger:hover:not(:disabled)  { background: var(--danger-hover); }
+        .btn-secondary { background: var(--surface-2); color: var(--text); border: 1px solid var(--border-2); }
+        .btn-secondary:hover:not(:disabled) { background: var(--border); }
+        .btn-small { padding: 0.3rem 0.7rem; font-size: 0.78rem; }
 
         /* ── Manage grid ── */
         .manage-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
@@ -216,7 +279,11 @@
         }
         tbody td { padding: 0.65rem 0.75rem; border-bottom: 1px solid var(--border); color: var(--text); }
         tbody tr:last-child td { border-bottom: none; }
-        tbody tr:hover td { background: var(--surface-2); }
+        tbody tr.clickable { cursor: pointer; }
+        tbody tr.clickable:hover td { background: var(--surface-2); }
+        tbody tr.detail-row { display: none; }
+        tbody tr.detail-row.visible { display: table-row; }
+        tbody tr.detail-row td { background: var(--surface-2); padding: 1rem 1.25rem; }
 
         .badge {
             display: inline-block;
@@ -229,6 +296,7 @@
         .badge-success { background: #dcfce7; color: #166534; }
         .badge-failed  { background: #fee2e2; color: #991b1b; }
         .badge-invalid { background: #f1f5f9; color: #64748b; }
+        .badge-warning { background: var(--warning-bg); color: var(--warning-text); }
 
         .tx-id { font-family: monospace; font-size: 0.72rem; color: var(--muted); }
         .sub { font-size: 0.7rem; font-family: monospace; color: var(--muted); }
@@ -257,9 +325,66 @@
         }
         .btn-sync:hover { background: var(--primary); color: #fff; }
 
+        /* ── Copy button ── */
+        .copy-btn {
+            border: 1px solid var(--border-2);
+            background: var(--surface);
+            border-radius: 4px;
+            padding: 0.1rem 0.4rem;
+            font-size: 0.68rem;
+            color: var(--muted);
+            cursor: pointer;
+            margin-left: 0.35rem;
+        }
+        .copy-btn:hover { color: var(--primary); border-color: var(--primary); }
+        .hash { font-family: monospace; font-size: 0.75rem; }
+
+        /* ── Search / filter bar ── */
+        .toolbar { display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: flex-end; margin-bottom: 1.25rem; }
+        .toolbar .form-group { min-width: 160px; flex: 0 1 220px; }
+
+        /* ── Network grid ── */
+        .network-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; }
+        .network-item { border: 1px solid var(--border); border-radius: 8px; padding: 0.85rem 1rem; }
+        .network-item .label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin-bottom: 0.3rem; }
+        .network-item .value { font-size: 0.9rem; font-weight: 600; color: var(--text); }
+
+        /* ── Modal ── */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.45);
+            align-items: center;
+            justify-content: center;
+            z-index: 50;
+            padding: 1rem;
+        }
+        .modal-overlay.visible { display: flex; }
+        .modal-box {
+            background: var(--surface);
+            border-radius: 12px;
+            padding: 1.5rem;
+            max-width: 480px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .modal-box h2 { margin-bottom: 1.25rem; }
+
+        .action-links { display: flex; gap: 0.6rem; }
+        .action-links button { background: none; border: none; color: var(--primary); font-size: 0.78rem; font-weight: 600; cursor: pointer; padding: 0; }
+        .action-links button:hover { text-decoration: underline; }
+        .action-links button.danger-link { color: var(--danger); }
+
         @media (max-width: 640px) {
             .banks, .manage-grid { grid-template-columns: 1fr; }
             .form-grid { grid-template-columns: 1fr; }
+            table.responsive-cards thead { display: none; }
+            table.responsive-cards, table.responsive-cards tbody, table.responsive-cards tr, table.responsive-cards td { display: block; width: 100%; }
+            table.responsive-cards tr:not(.detail-row) { border: 1px solid var(--border); border-radius: 8px; margin-bottom: 0.75rem; padding: 0.5rem 0.75rem; }
+            table.responsive-cards td { border-bottom: none; padding: 0.3rem 0; }
+            table.responsive-cards td[data-label]::before { content: attr(data-label); display: block; font-size: 0.65rem; text-transform: uppercase; color: var(--muted); font-weight: 700; }
         }
     </style>
 </head>
@@ -277,314 +402,26 @@
 <main>
 
     {#if message}
-    <div class="alert alert-success">{message}</div>
+    <div class="alert alert-success" role="status">{message}</div>
     {/if}
     {#if error}
-    <div class="alert alert-error">{error}</div>
+    <div class="alert alert-error" role="alert">{error}</div>
     {/if}
 
-    <!-- Tab Navigation -->
-    <div class="tabs">
-        <button class="tab-btn" data-tab="worldstate"  onclick="showTab('worldstate')">World State</button>
-        <button class="tab-btn" data-tab="blockchain"  onclick="showTab('blockchain')">Blockchain</button>
-        <button class="tab-btn" data-tab="transfers"   onclick="showTab('transfers')">Transfers</button>
-        <button class="tab-btn" data-tab="accounts"    onclick="showTab('accounts')">Accounts</button>
-        <button class="tab-btn" data-tab="manage"      onclick="showTab('manage')">Manage Accounts</button>
-        <button class="tab-btn" data-tab="tests"       onclick="showTab('tests')">Tests</button>
-    </div>
+    <!-- Top-level Tab Navigation -->
+    <nav class="tabs" aria-label="Primary">
+        <button class="tab-btn" data-tab="dashboard"  onclick="showTab('dashboard')">Dashboard</button>
+        <button class="tab-btn" data-tab="accounts"   onclick="showTab('accounts')">Accounts</button>
+        <button class="tab-btn" data-tab="transfer"   onclick="showTab('transfer')">Transfer</button>
+        <button class="tab-btn" data-tab="ledger"     onclick="showTab('ledger')">Ledger</button>
+        <button class="tab-btn" data-tab="operations" onclick="showTab('operations')">Operations</button>
+    </nav>
 
-    <!-- ── Tab: World State ── -->
-    <div id="tab-worldstate" class="tab-content">
-        <div class="card">
-            <h2>World State — API vs Fabric</h2>
-            <div class="table-wrap">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Account</th>
-                            <th>Owner</th>
-                            <th>Bank</th>
-                            <th>API Balance</th>
-                            <th>Fabric Balance</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {#for entry in ledger}
-                        <tr>
-                            <td class="tx-id">{entry.id}</td>
-                            <td>{entry.owner}</td>
-                            <td>{entry.bank}</td>
-                            <td class="ledger-amount">{entry.apiBalance} tkn</td>
-                            <td>
-                                {#if entry.fabricBalance == "N/A"}
-                                <span class="fabric-na">N/A</span>
-                                {#else}
-                                <span class="ledger-amount">{entry.fabricBalance} tkn</span>
-                                {/if}
-                            </td>
-                        </tr>
-                        {/for}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-
-    <!-- ── Tab: Blockchain ── -->
-    <div id="tab-blockchain" class="tab-content">
-        <div class="card">
-            <h2>Blockchain — Hyperledger Fabric Ledger</h2>
-            {#if ledger.isEmpty() || (ledger.size() > 0 && ledger[0].fabricBalance == "N/A")}
-            <div class="alert alert-error">Fabric ledger not available (FABRIC_ENABLED=false or not deployed)</div>
-            {/if}
-            <div class="table-wrap">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Account ID</th>
-                            <th>Owner</th>
-                            <th>Bank</th>
-                            <th>Fabric Balance</th>
-                            <th>Sync Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {#for entry in ledger}
-                        <tr>
-                            <td class="tx-id">{entry.id}</td>
-                            <td>{entry.owner}</td>
-                            <td>{entry.bank}</td>
-                            <td>
-                                {#if entry.fabricBalance == "N/A"}
-                                <span class="fabric-na">N/A</span>
-                                {#else}
-                                <span class="ledger-amount">{entry.fabricBalance} tkn</span>
-                                {/if}
-                            </td>
-                            <td>
-                                {#if entry.fabricBalance == "N/A"}
-                                <span class="badge badge-invalid">No Fabric</span>
-                                {#else if entry.isSynced}
-                                <span class="badge badge-success">✓ sync</span>
-                                {#else}
-                                <span class="badge badge-failed">✗ diverged</span>
-                                {/if}
-                            </td>
-                        </tr>
-                        {/for}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-
-    <!-- ── Tab: Transfers ── -->
-    <div id="tab-transfers" class="tab-content">
-
-        <!-- Transfer form -->
-        <div class="card">
-            <h2>Transfer Tokens</h2>
-            <form method="POST" action="/transfer">
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="from">From</label>
-                        <select id="from" name="from">
-                            {#for acc in accounts}
-                            <option value="{acc.id}">{acc.owner} ({acc.bank}) — {acc.id}</option>
-                            {/for}
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="to">To</label>
-                        <select id="to" name="to">
-                            {#for acc in accounts}
-                            <option value="{acc.id}">{acc.owner} ({acc.bank}) — {acc.id}</option>
-                            {/for}
-                        </select>
-                    </div>
-                    <div class="form-group" style="max-width:130px">
-                        <label for="amount">Amount</label>
-                        <input id="amount" type="number" name="amount" min="1" value="100">
-                    </div>
-                    <button type="submit" class="btn btn-primary">Send</button>
-                </div>
-            </form>
-        </div>
-
-        <!-- Transaction history -->
-        <div class="card">
-            <h2>Transaction History</h2>
-            {#if transactions.isEmpty()}
-            <p class="empty">No transactions yet — submit a transfer first.</p>
-            {#else}
-            <div class="table-wrap">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>TX ID</th>
-                            <th>From</th>
-                            <th>To</th>
-                            <th>Amount</th>
-                            <th>Status</th>
-                            <th>Time</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {#for tx in transactions}
-                        <tr>
-                            <td class="tx-id">{tx.txId.substring(0,8)}…</td>
-                            <td>
-                                <div>{tx.fromLabel}</div>
-                                <div class="sub">{tx.fromId}</div>
-                            </td>
-                            <td>
-                                <div>{tx.toLabel}</div>
-                                <div class="sub">{tx.toId}</div>
-                            </td>
-                            <td><strong>{tx.amount}</strong></td>
-                            <td><span class="badge badge-{tx.status}">{tx.status}</span></td>
-                            <td class="sub">{tx.timestamp}</td>
-                        </tr>
-                        {/for}
-                    </tbody>
-                </table>
-            </div>
-            {/if}
-        </div>
-
-    </div>
-
-    <!-- ── Tab: Accounts ── -->
-    <div id="tab-accounts" class="tab-content">
-        <p class="section-label">Accounts by Bank</p>
-        <div class="banks">
-            {#for bankEntry in banks.entrySet()}
-            <div class="bank-section">
-                <div class="bank-header">
-                    <span class="bank-name">{bankEntry.key}</span>
-                    <span class="org-tag">Org{bankEntry_count}</span>
-                </div>
-                {#for acc in bankEntry.value}
-                <div class="account-row">
-                    <div class="account-info">
-                        <div class="client">{acc.owner}</div>
-                        <div class="acc-id">{acc.id}</div>
-                    </div>
-                    <div class="account-balance">
-                        <div class="amount">{acc.balance}</div>
-                        <div class="unit">tokens</div>
-                    </div>
-                </div>
-                {/for}
-            </div>
-            {/for}
-        </div>
-    </div>
-
-    <!-- ── Tab: Manage ── -->
-    <div id="tab-manage" class="tab-content">
-        <div class="manage-grid">
-
-            <!-- Create Account -->
-            <div class="card">
-                <h2>Create Account</h2>
-                <form method="POST" action="/manage/create">
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label for="new-id">Account ID</label>
-                            <input id="new-id" type="text" name="id" placeholder="ACC-B1-003" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="new-owner">Owner Name</label>
-                            <input id="new-owner" type="text" name="owner" placeholder="ClientE" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="new-bank">Bank</label>
-                            <select id="new-bank" name="bank">
-                                <option value="Bank1">Bank1 (Org1)</option>
-                                <option value="Bank2">Bank2 (Org2)</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="new-balance">Initial Balance</label>
-                            <input id="new-balance" type="number" name="initialBalance" min="0" value="500">
-                        </div>
-                    </div>
-                    <button type="submit" class="btn btn-primary">Create Account</button>
-                </form>
-            </div>
-
-            <!-- Delete Account -->
-            <div class="card">
-                <h2>Delete Account</h2>
-                <div class="note">Removes the account from the in-memory store. Seeded accounts will re-appear on pod restart.</div>
-                <form method="POST" action="/manage/delete">
-                    <div class="form-group" style="margin-bottom:1rem">
-                        <label for="del-id">Account</label>
-                        <select id="del-id" name="id">
-                            {#for acc in accounts}
-                            <option value="{acc.id}">{acc.owner} ({acc.bank}) — {acc.id}</option>
-                            {/for}
-                        </select>
-                    </div>
-                    <button type="submit" class="btn btn-danger">Delete Account</button>
-                </form>
-            </div>
-
-        </div>
-    </div>
-
-    <!-- ── Tab: Tests ── -->
-    <div id="tab-tests" class="tab-content">
-        <p class="section-label">Automated Test Results</p>
-        <div class="manage-grid">
-
-            <div class="card">
-                <h2>quarkus-api</h2>
-                {#if apiTests}
-                <div class="account-row">
-                    <div class="account-info">
-                        <div class="client">{apiTests.passed} / {apiTests.tests} passed</div>
-                        <div class="acc-id">{#if apiTests.timestamp}last run: {apiTests.timestamp}{#else}not yet run{/if}</div>
-                    </div>
-                    <div class="account-balance">
-                        {#if apiTests.isPassing}
-                        <span class="badge badge-success">&#10003; passing</span>
-                        {#else}
-                        <span class="badge badge-failed">&#10007; failing</span>
-                        {/if}
-                    </div>
-                </div>
-                <div class="note">failures: {apiTests.failures} &middot; errors: {apiTests.errors} &middot; skipped: {apiTests.skipped}{#if apiTests.commit} &middot; commit {apiTests.commit}{/if}</div>
-                {#else}
-                <p class="empty">Could not reach quarkus-api test results.</p>
-                {/if}
-            </div>
-
-            <div class="card">
-                <h2>quarkus-ui</h2>
-                {#if uiTests}
-                <div class="account-row">
-                    <div class="account-info">
-                        <div class="client">{uiTests.passed} / {uiTests.tests} passed</div>
-                        <div class="acc-id">{#if uiTests.timestamp}last run: {uiTests.timestamp}{#else}not yet run{/if}</div>
-                    </div>
-                    <div class="account-balance">
-                        {#if uiTests.isPassing}
-                        <span class="badge badge-success">&#10003; passing</span>
-                        {#else}
-                        <span class="badge badge-failed">&#10007; failing</span>
-                        {/if}
-                    </div>
-                </div>
-                <div class="note">failures: {uiTests.failures} &middot; errors: {uiTests.errors} &middot; skipped: {uiTests.skipped}{#if uiTests.commit} &middot; commit {uiTests.commit}{/if}</div>
-                {#else}
-                <p class="empty">No test results bundled in this build.</p>
-                {/if}
-            </div>
-
-        </div>
-    </div>
+    {#include tabs/dashboard /}
+    {#include tabs/accounts /}
+    {#include tabs/transfer /}
+    {#include tabs/ledger /}
+    {#include tabs/operations /}
 
 </main>
 
@@ -594,10 +431,100 @@
         document.querySelectorAll('.tab-btn').forEach(function(el) { el.classList.remove('active'); });
         var content = document.getElementById('tab-' + name);
         if (content) content.classList.add('visible');
-        var btn = document.querySelector('[data-tab="' + name + '"]');
+        var btn = document.querySelector('.tab-btn[data-tab="' + name + '"]');
         if (btn) btn.classList.add('active');
     }
+
+    function showSubTab(group, name) {
+        document.querySelectorAll('.subtab-content[data-group="' + group + '"]').forEach(function(el) { el.classList.remove('visible'); });
+        document.querySelectorAll('.subtab-btn[data-group="' + group + '"]').forEach(function(el) { el.classList.remove('active'); });
+        var content = document.getElementById('subtab-' + group + '-' + name);
+        if (content) content.classList.add('visible');
+        var btn = document.querySelector('.subtab-btn[data-group="' + group + '"][data-name="' + name + '"]');
+        if (btn) btn.classList.add('active');
+    }
+
+    function toggleDetail(id) {
+        var row = document.getElementById(id);
+        if (row) row.classList.toggle('visible');
+    }
+
+    function openModal(id) {
+        var el = document.getElementById(id);
+        if (el) el.classList.add('visible');
+    }
+
+    function closeModal(id) {
+        var el = document.getElementById(id);
+        if (el) el.classList.remove('visible');
+    }
+
+    function disableSubmit(form) {
+        var btn = form.querySelector('button[type=submit]');
+        if (btn) {
+            btn.disabled = true;
+            btn.dataset.originalText = btn.textContent;
+            btn.textContent = 'Submitting…';
+        }
+        return true;
+    }
+
+    function copyText(text, btn) {
+        if (navigator.clipboard) {
+            navigator.clipboard.writeText(text);
+        }
+        if (btn) {
+            var original = btn.textContent;
+            btn.textContent = 'Copied';
+            setTimeout(function() { btn.textContent = original; }, 1200);
+        }
+    }
+
+    function filterAccounts() {
+        var q = document.getElementById('acc-search').value.trim().toLowerCase();
+        var org = document.getElementById('acc-org-filter').value;
+        document.querySelectorAll('#accounts-table tbody tr.account-data-row').forEach(function(row) {
+            var matchesQuery = !q || row.dataset.id.toLowerCase().indexOf(q) !== -1 || row.dataset.owner.toLowerCase().indexOf(q) !== -1;
+            var matchesOrg = !org || row.dataset.bank === org;
+            var visible = matchesQuery && matchesOrg;
+            row.style.display = visible ? '' : 'none';
+            var detail = document.getElementById('detail-' + row.dataset.id);
+            if (detail && !visible) detail.classList.remove('visible');
+        });
+    }
+
+    function sortAccounts() {
+        var key = document.getElementById('acc-sort').value;
+        var tbody = document.querySelector('#accounts-table tbody');
+        var rows = Array.from(tbody.querySelectorAll('tr.account-data-row'));
+        rows.sort(function(a, b) {
+            if (key === 'balance') return Number(b.dataset.balance) - Number(a.dataset.balance);
+            if (key === 'updated') return (b.dataset.updated || '').localeCompare(a.dataset.updated || '');
+            return (a.dataset.owner || '').localeCompare(b.dataset.owner || '');
+        });
+        rows.forEach(function(row) {
+            var detail = document.getElementById('detail-' + row.dataset.id);
+            tbody.appendChild(row);
+            if (detail) tbody.appendChild(detail);
+        });
+    }
+
+    function formatLocalTimes() {
+        document.querySelectorAll('.local-time[data-iso]').forEach(function(el) {
+            var iso = el.dataset.iso;
+            if (!iso) return;
+            var d = new Date(iso);
+            if (!isNaN(d.getTime())) {
+                el.textContent = d.toLocaleString();
+                el.title = iso;
+            }
+        });
+    }
+
     showTab('{activeTab}');
+    showSubTab('ledger', '{ledgerSubTab}');
+    showSubTab('operations', '{opsSubTab}');
+    formatLocalTimes();
 </script>
 
 </body>

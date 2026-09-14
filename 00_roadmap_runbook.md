@@ -40,6 +40,14 @@ This file was previously named `03_implementation-status.md`.
 - quarkus-ui has a standalone `/architecture` page (separate from the
   dashboard tab bar) with a static platform diagram + service URL table —
   linked from the dashboard header
+- **UX/IA redesign (REQ_0001, 2026-09-14):** the dashboard now has 5 top-level
+  tabs — Dashboard, Accounts, Transfer, Ledger (World State / Blockchain
+  subtabs), Operations (Network / Consistency / Tests subtabs) — replacing the
+  old 6 flat tabs. `POST /transfer` is now a best-effort dual-write to both the
+  in-memory API state and the real Fabric ledger; Ledger → Blockchain shows
+  real blocks via new qscc-backed `/fabric/blocks` endpoints (no chaincode
+  change). See `CLAUDE.md`'s Quarkus API / Quarkus UI sections for the full
+  endpoint and tab breakdown.
 
 **Live services:**
 | Service            | URL                              | Credentials                |
@@ -530,19 +538,28 @@ scenario and see the result, without ever talking to Fabric directly.
    `dashboard.html`, tab-based — do not split into multiple pages)
 2. Wire it to quarkus-api via a MicroProfile REST Client pointed at
    `http://quarkus-api.quarkus-api.svc.cluster.local:8080`
-3. Build the dashboard as 6 tabs:
-   - **World State** (default): API balance vs Fabric on-chain balance per
-     account; Fabric column shows "N/A" only if `FABRIC_ENABLED=false` or
-     the peer is unreachable
-   - **Blockchain**: Fabric-only ledger view + per-account sync status badge
-   - **Transfers**: transfer form (From/To/Amount) + transaction history
-     table (dropdowns show `ClientA (Bank1) — ACC-B1-001` labels, post
-     account IDs)
-   - **Accounts**: bank-grouped balance cards (Bank1/Org1, Bank2/Org2)
-   - **Manage**: create/delete account forms
-   - **Tests**: pass/fail summary for quarkus-api (fetched live via
-     `ApiClient.getApiTestResults()`) and quarkus-ui's own bundled
-     `test-results.json`
+3. Build the dashboard as 5 top-level tabs (redesigned 2026-09-14 per
+   `00_Requests/REQ_0001_Update-UX.md` — see `CLAUDE.md`'s Quarkus UI section
+   for the current, authoritative breakdown of each tab/subtab; the original
+   6-tab layout below is kept for history):
+   - ~~**World State** (default): API balance vs Fabric on-chain balance per
+     account~~ → now the Ledger → World State subtab (authoritative balance +
+     compact verified/diverged badge; the detailed comparison moved to
+     Operations → Consistency)
+   - ~~**Blockchain**: Fabric-only ledger view + per-account sync status
+     badge~~ → now the Ledger → Blockchain subtab, showing **real** blocks and
+     transactions via qscc, not account balances
+   - ~~**Transfers**~~ → now **Transfer**, with client+server validation and
+     an expandable Fabric-metadata detail row per transaction
+   - ~~**Accounts**: bank-grouped balance cards~~ and ~~**Manage**:
+     create/delete account forms~~ → merged into one **Accounts** tab
+     (searchable/sortable table, Create modal, Close-account confirmation)
+   - **Tests** moved under **Operations**, otherwise unchanged: pass/fail
+     summary for quarkus-api (fetched live via `ApiClient.getApiTestResults()`)
+     and quarkus-ui's own bundled `test-results.json`
+   - New: a **Dashboard** tab (summary cards + network status) is now the
+     default landing tab, and a new **Operations → Network** subtab surfaces
+     Fabric channel/chaincode/peer status
 4. Add a standalone `/architecture` page (`ArchitectureResource.java` +
    `templates/architecture.html`) — hand-built inline SVG diagram + service
    URL/credentials table; link it from the dashboard header only, do not

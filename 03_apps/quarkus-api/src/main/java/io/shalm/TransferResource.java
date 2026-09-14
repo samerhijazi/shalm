@@ -27,6 +27,9 @@ public class TransferResource {
     AccountService accountService;
 
     @Inject
+    FabricGatewayService fabric;
+
+    @Inject
     MeterRegistry registry;
 
     private Counter requestCount;
@@ -61,7 +64,9 @@ public class TransferResource {
             boolean ok = accountService.transfer(req.from, req.to, req.amount);
             if (ok) {
                 log(txId, fromAcc, toAcc, req.amount, "success");
-                return Response.ok(new TransferResponse(txId, "success", "Transfer completed")).build();
+                TransferResponse response = new TransferResponse(txId, "success", "Transfer completed");
+                attachFabricResult(response, req.from, req.to, req.amount);
+                return Response.ok(response).build();
             } else {
                 errorCount.increment();
                 log(txId, fromAcc, toAcc, req.amount, "failed");
@@ -71,6 +76,25 @@ public class TransferResource {
             }
         } finally {
             sample.stop(requestLatency);
+        }
+    }
+
+    /**
+     * Best-effort dual-write to the Fabric ledger after the in-memory transfer already
+     * succeeded — the in-memory result remains authoritative for the response status.
+     * A Fabric failure never rolls back or fails the already-committed in-memory transfer.
+     */
+    private void attachFabricResult(TransferResponse response, String from, String to, int amount) {
+        if (!fabric.isAvailable()) {
+            response.markFabricUnavailable();
+            return;
+        }
+        try {
+            FabricTransferResult result = fabric.transfer(from, to, amount);
+            response.applyFabricResult(result);
+        } catch (Exception e) {
+            LOG.warnf("Fabric dual-write failed for transfer [%s -> %s %d]: %s", from, to, amount, e.getMessage());
+            response.markFabricFailed();
         }
     }
 

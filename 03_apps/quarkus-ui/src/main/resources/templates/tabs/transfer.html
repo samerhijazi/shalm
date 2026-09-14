@@ -1,0 +1,135 @@
+<div id="tab-transfer" class="tab-content">
+    <div class="page-heading">
+        <h2>Transfer</h2>
+        <p>Move tokens between accounts across banks.</p>
+    </div>
+
+    <div class="card">
+        <h2>Submit Transfer</h2>
+        <form method="POST" action="/transfer" onsubmit="return validateTransfer(this)">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="transfer-from">From Account</label>
+                    <select id="transfer-from" name="from" onchange="updateFromBalance()">
+                        {#for acc in accounts}
+                        <option value="{acc.id}" data-balance="{acc.balance}">{acc.owner} ({acc.bank}) — {acc.id}</option>
+                        {/for}
+                    </select>
+                    <span class="hint" id="transfer-from-balance"></span>
+                </div>
+                <div class="form-group">
+                    <label for="transfer-to">To Account</label>
+                    <select id="transfer-to" name="to" onchange="updateToBank()">
+                        {#for acc in accounts}
+                        <option value="{acc.id}" data-bank="{acc.bank}">{acc.owner} ({acc.bank}) — {acc.id}</option>
+                        {/for}
+                    </select>
+                    <span class="hint" id="transfer-to-bank"></span>
+                </div>
+                <div class="form-group" style="max-width:160px">
+                    <label for="amount">Amount (TKN)</label>
+                    <input id="amount" type="number" name="amount" min="1" value="100" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Submit Transfer</button>
+            </div>
+            <p class="alert alert-error" id="transfer-client-error" style="display:none" role="alert"></p>
+        </form>
+    </div>
+
+    <div class="card">
+        <h2>Transaction History</h2>
+        {#if transactions.isEmpty()}
+        <p class="empty">Transfers will appear here after the first submitted transaction.</p>
+        {#else}
+        <div class="table-wrap">
+            <table class="responsive-cards">
+                <thead>
+                    <tr>
+                        <th>Time</th><th>TX ID</th><th>Source</th><th>Destination</th><th>Amount</th><th>Block</th><th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {#for tx in transactions}
+                    <tr class="clickable" onclick="toggleDetail('tx-detail-{tx_count}')">
+                        <td data-label="Time" class="sub">{tx.timestamp}</td>
+                        <td data-label="TX ID" class="tx-id">{tx.txId.substring(0,8)}…</td>
+                        <td data-label="Source"><div>{tx.fromLabel}</div><div class="sub">{tx.fromId}</div></td>
+                        <td data-label="Destination"><div>{tx.toLabel}</div><div class="sub">{tx.toId}</div></td>
+                        <td data-label="Amount"><strong>{tx.amount} TKN</strong></td>
+                        <td data-label="Block">
+                            {#if tx.blockNumber}
+                            #{tx.blockNumber}
+                            {#else}
+                            <span class="fabric-na">N/A</span>
+                            {/if}
+                        </td>
+                        <td data-label="Status"><span class="badge badge-{tx.status}">{tx.status}</span></td>
+                    </tr>
+                    <tr class="detail-row" id="tx-detail-{tx_count}">
+                        <td colspan="7">
+                            <div class="form-grid">
+                                <div><strong>Full Transaction ID:</strong> <span class="hash">{tx.txId}</span>
+                                    <button type="button" class="copy-btn" onclick="copyText('{tx.txId}', this)">Copy</button>
+                                </div>
+                                {#if tx.channel}
+                                <div><strong>Channel:</strong> {tx.channel}</div>
+                                <div><strong>Chaincode:</strong> {tx.chaincodeName}</div>
+                                <div><strong>Invoked Function:</strong> {tx.function}</div>
+                                <div><strong>Block Number:</strong> #{tx.blockNumber}</div>
+                                <div><strong>Validation Code:</strong> {tx.validationCode}</div>
+                                {#else}
+                                <div class="fabric-na">Fabric metadata unavailable for this transaction (Fabric was not reachable, or the dual-write did not run).</div>
+                                {/if}
+                            </div>
+                        </td>
+                    </tr>
+                    {/for}
+                </tbody>
+            </table>
+        </div>
+        {/if}
+    </div>
+</div>
+
+<script>
+    function updateFromBalance() {
+        var sel = document.getElementById('transfer-from');
+        var opt = sel && sel.options[sel.selectedIndex];
+        var el = document.getElementById('transfer-from-balance');
+        if (el) el.textContent = opt ? (opt.dataset.balance + ' TKN available') : '';
+    }
+
+    function updateToBank() {
+        var sel = document.getElementById('transfer-to');
+        var opt = sel && sel.options[sel.selectedIndex];
+        var el = document.getElementById('transfer-to-bank');
+        if (el) el.textContent = opt ? ('Destination: ' + opt.dataset.bank) : '';
+    }
+
+    function validateTransfer(form) {
+        var from = form.from.value;
+        var to = form.to.value;
+        var amount = Number(form.amount.value);
+        var fromOption = form.from.options[form.from.selectedIndex];
+        var balance = Number(fromOption ? fromOption.dataset.balance : 0);
+        var errorEl = document.getElementById('transfer-client-error');
+        var msg = '';
+        if (!from || !to || from === to) {
+            msg = 'Source and destination accounts must be different.';
+        } else if (!amount || amount <= 0) {
+            msg = 'Amount must be greater than zero.';
+        } else if (amount > balance) {
+            msg = 'Amount exceeds the available balance.';
+        }
+        if (msg) {
+            errorEl.textContent = msg;
+            errorEl.style.display = 'block';
+            return false;
+        }
+        errorEl.style.display = 'none';
+        return disableSubmit(form);
+    }
+
+    updateFromBalance();
+    updateToBank();
+</script>

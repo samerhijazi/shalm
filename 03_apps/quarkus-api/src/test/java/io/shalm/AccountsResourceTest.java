@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.notNullValue;
 
 @QuarkusTest
 class AccountsResourceTest {
@@ -26,7 +27,8 @@ class AccountsResourceTest {
           .then()
              .statusCode(200)
              .body("owner", equalTo("ClientA"))
-             .body("bank", equalTo("Bank1"));
+             .body("bank", equalTo("Bank1"))
+             .body("updatedAt", notNullValue());
     }
 
     @Test
@@ -44,7 +46,8 @@ class AccountsResourceTest {
           .body("{\"id\":\"ACC-TEST-CREATE\",\"owner\":\"Tester\",\"bank\":\"Bank1\",\"initialBalance\":250}")
           .when().post("/accounts")
           .then()
-             .statusCode(201);
+             .statusCode(201)
+             .body("updatedAt", notNullValue());
 
         given()
           .when().delete("/accounts/ACC-TEST-CREATE")

@@ -122,9 +122,12 @@ AI agent:      FastAPI (namespace: ai, port 30810) — GET /summary (Loki), GET 
 
 ### Quarkus API (`03_apps/quarkus-api/`, namespace `quarkus-api`)
 
-- Jakarta REST 3.0 resources: `AccountsResource`, `BalanceResource`, `TransferResource`, `FabricResource`
-- `AccountService` holds in-memory state; seeded with 4 accounts (ACC-B1-001/002, ACC-B2-001/002)
-- `FabricGatewayService` wraps Fabric Gateway SDK — enabled via `FABRIC_ENABLED` env var (`true` in `02_gitops/quarkus-app/deployment.yaml`); requires the `fabric-org1-admin` secret to exist in the `quarkus-api` namespace (see Known Issues)
+- Jakarta REST 3.0 resources: `AccountsResource`, `BalanceResource`, `TransferResource`, `FabricResource`, `FabricLedgerResource`, `NetworkStatusResource`, `ConsistencyResource`
+- `AccountService` holds in-memory state; seeded with 4 accounts (ACC-B1-001/002, ACC-B2-001/002); `Account.updatedAt` is stamped on creation and on every transfer
+- `FabricGatewayService` wraps Fabric Gateway SDK — enabled via `FABRIC_ENABLED` env var (`true` in `02_gitops/quarkus-app/deployment.yaml`); requires the `fabric-org1-admin` secret to exist in the `quarkus-api` namespace (see Known Issues). Also holds a second `Contract` handle for the built-in `qscc` system chaincode (no chaincode redeploy needed) and exposes `evaluateQscc(...)` for block/ledger queries.
+- `POST /transfer` is a best-effort dual-write: it always updates the in-memory `AccountService` state (authoritative for success/failure), then — only when `FABRIC_ENABLED` and the gateway is connected — also submits the same transfer to Fabric via `contract.newProposal(...).endorse().submitAsync().getStatus()` and attaches the real `fabricTransactionId`/`fabricBlockNumber`/`fabricValidationCode`/`fabricStatus` (`committed`/`failed`/`unavailable`) to the response. A Fabric failure never rolls back or fails the in-memory transfer. `POST /fabric/transfer` uses the same real Fabric transaction id (previously fabricated a random UUID — fixed).
+- `FabricLedgerService` parses real Fabric blocks via `qscc`'s `GetChainInfo`/`GetBlockByNumber` (protobuf classes come from `fabric-protos`, already a transitive dependency of `fabric-gateway` — no new Maven dependency). `GET /fabric/blocks?limit=`, `GET /fabric/blocks/{number}` return 503 (matching `FabricResource`'s convention) when Fabric is unavailable.
+- `GET /fabric/network-status` and `GET /consistency` always return 200 (never 503) — they report Fabric-down as data (`fabricAvailable: false`), not as an HTTP error, since the UI needs a renderable "not connected" state rather than an exception.
 - `GET /tests` — serves the JSON test-result summary baked into the image at CI build time (read by the quarkus-ui "Tests" dashboard tab)
 - Micrometer metrics: `transfer_request_count`, `transfer_request_latency`, `transfer_error_count`
 - Structured JSON logs with MDC fields: `transaction_id`, `from_account`, `to_account`, `amount`, `status`
@@ -133,16 +136,15 @@ AI agent:      FastAPI (namespace: ai, port 30810) — GET /summary (Loki), GET 
 ### Quarkus UI (`03_apps/quarkus-ui/`, namespace `quarkus-ui`)
 
 - Standalone `/architecture` page (`ArchitectureResource.java` + `templates/architecture.html`) — static platform architecture diagram (hand-built inline SVG) and a service URLs/credentials table; linked from the dashboard header, not part of the tab bar
-- Single Qute template: `dashboard.html` — 6 tabs:
-  - **World State** (default): table comparing API balance vs Fabric on-chain balance per account; Fabric column shows "N/A" only if `FABRIC_ENABLED=false` or the peer is unreachable
-  - **Blockchain**: Fabric-only ledger view + per-account sync status badge
-  - **Transfers**: transfer form (From / To / Amount) at top; transaction history table below
-  - **Accounts**: bank-grouped balance cards (Bank1/Org1, Bank2/Org2)
-  - **Manage**: create account + delete account forms
-  - **Tests**: pass/fail summary cards for quarkus-api (fetched live via `ApiClient.getApiTestResults()`) and quarkus-ui (its own bundled `test-results.json`)
+- Qute templates: `dashboard.html` (shell — head/style/header/5-tab nav/JS) `{#include}`s five partials under `templates/tabs/`, one per top-level tab. Five top-level tabs, default landing tab is **Dashboard**:
+  - **Dashboard**: summary cards (total token supply, account count, org count, latest Fabric block, network health, API/Fabric consistency status), accounts-by-bank, 5 most recent transactions, Fabric network/component status, "New Transfer" CTA
+  - **Accounts**: merged Accounts + Manage Accounts — searchable/sortable table (client-side JS filter/sort, no server round trip), Create Account modal, per-account View/Transfer/Close actions with a same-page detail panel and a Close-Account confirmation modal whose wording is conditional on `networkStatus.fabricAvailable` (blockchain-history wording only when Fabric is actually connected)
+  - **Transfer**: form with client + server validation (same-account, non-positive amount, amount > balance), honest lifecycle (`Submitting` → `Committed`/`Failed`, no fabricated intermediate states), transaction history with an expandable row showing Fabric metadata only when the dual-write actually ran
+  - **Ledger**: **World State** subtab (authoritative API balance + compact verified/diverged badge, sourced from `/consistency`) and **Blockchain** subtab (real blocks/transactions from `/fabric/blocks`, or an honest "unavailable" state — never account balances as a substitute)
+  - **Operations**: **Network** subtab (channel, chaincode name+version, latest block, badges — Peer0 Org2/Orderer/State DB are honestly "Unknown", not fabricated, since only one Fabric identity is connected), **Consistency** subtab (the detailed API-vs-Fabric comparison, moved here from the old World State tab, plus a "Run Consistency Check" action), **Tests** subtab (same test-result cards as before)
 - `ApiClient` (MicroProfile REST Client) calls quarkus-api at `http://quarkus-api.quarkus-api.svc.cluster.local:8080`
-- `TransactionStore` holds last 20 transfers in memory (lost on pod restart)
-- `LedgerEntry` DTO combines `AccountInfo` (API) + Fabric balance string per account
+- `TransactionStore` holds last 20 transfers in memory (lost on pod restart); `getForAccount(id)`/`getRecent(n)` support the Accounts detail panel and Dashboard's recent-transactions card
+- `DashboardResource` computes `totalSupply`/`orgCount`/`txByAccount`/`closeAccountWarning` and fetches `NetworkStatus`/`ConsistencyReport`/`BlocksResponse` on every render, each with a defensive try/catch falling back to an honest "unavailable" object (same pattern as the pre-existing `fetchAccounts()`)
 
 ### Fabric (`04_blockchain/fabric/`, namespace `fabric`)
 
@@ -153,7 +155,7 @@ AI agent:      FastAPI (namespace: ai, port 30810) — GET /summary (Loki), GET 
 - Peer/orderer ledger storage is PersistentVolumeClaims (`local-path` StorageClass, `01_infrastructure/base/local-path-provisioner.yaml`) — not `emptyDir`, so a pod restart doesn't wipe the channel
 - `fabric-setup` is an Argo CD Sync hook (`02_gitops/fabric/setup-job.yaml`): it creates/joins `mychannel`, checks the canonical package ID, and installs/approves/commits the chaincode. It mounts full MSP dirs (cacerts/signcerts/keystore/tlscacerts) for both admin identities, not just `config.yaml`.
 - Chaincode CI runs unit tests, release metadata validation, and a disposable two-organization CCAAS integration test before publishing an image. Argo CD follows with a PostSync API/UI smoke test (`02_gitops/fabric/smoke-test-job.yaml`).
-- `/fabric/health` performs a real ledger query; the API readiness check includes Fabric when `FABRIC_ENABLED=true`. Run `01_infrastructure/scripts/verify-fabric.sh` after a rollout to check deployments, all four seeded balances, and the rendered Blockchain tab.
+- `/fabric/health` performs a real ledger query; the API readiness check includes Fabric when `FABRIC_ENABLED=true`. Run `01_infrastructure/scripts/verify-fabric.sh` after a rollout to check deployments, all four seeded balances, and the rendered Ledger → Blockchain tab.
 - **Java chaincode** (`fabric-chaincode-java` SDK — not Quarkus): `InitLedger`, `Transfer`, `QueryBalance`, `createAccount`, `getAccount`, `deposit`, `deleteAccount`
 - API calls Fabric via `FabricGatewayService` using gRPC (port 7051)
 
@@ -196,5 +198,7 @@ kubectl get secret fabric-org1-admin -n fabric -o json \
   | python3 -c "import json,sys; d=json.load(sys.stdin); d['metadata']={'name':'fabric-org1-admin','namespace':'quarkus-api'}; print(json.dumps(d))" \
   | kubectl apply -f -
 ```
+
+**ConfigMaps are namespace-scoped too, same as Secrets** — `02_gitops/fabric/chaincode-config.yaml`'s `fabric-chaincode-config` ConfigMap lives in the `fabric` namespace, but `quarkus-api`'s Deployment runs in the `quarkus-api` namespace and can't mount it directly. Rather than duplicating the ConfigMap across namespaces, `FABRIC_CHAINCODE_VERSION` in `02_gitops/quarkus-app/deployment.yaml` is a plain literal value kept manually in sync with `chaincode-version` in `chaincode-config.yaml` — update both together when the chaincode version changes; it's used only to display the version on the Operations → Network page.
 
 **ArgoCD auto-sync reverts manual `kubectl apply` / `kubectl edit` on any GitOps-managed resource** — a live edit that isn't pushed to `origin/main` gets silently reverted on the next reconcile (visible as a Synced→OutOfSync→Synced / Healthy→Degraded cycle in `kubectl get applications -n argocd`). Always commit + push the manifest change instead of patching the live object directly.

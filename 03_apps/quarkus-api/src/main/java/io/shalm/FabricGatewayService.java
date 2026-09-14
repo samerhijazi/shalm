@@ -9,6 +9,9 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.hyperledger.fabric.client.Contract;
 import org.hyperledger.fabric.client.Gateway;
 import org.hyperledger.fabric.client.Network;
+import org.hyperledger.fabric.client.Status;
+import org.hyperledger.fabric.client.SubmittedTransaction;
+import org.hyperledger.fabric.client.Transaction;
 import org.hyperledger.fabric.client.identity.Identities;
 import org.hyperledger.fabric.client.identity.Signers;
 import org.hyperledger.fabric.client.identity.X509Identity;
@@ -54,9 +57,13 @@ public class FabricGatewayService {
     @ConfigProperty(name = "fabric.key.path", defaultValue = "/fabric-crypto/admin-key.pem")
     String keyPath;
 
+    @ConfigProperty(name = "fabric.chaincode.version", defaultValue = "unknown")
+    String chaincodeVersion;
+
     private Gateway gateway;
     private ManagedChannel grpcChannel;
     private Contract contract;
+    private Contract qsccContract;
     private boolean available = false;
 
     @Inject
@@ -96,6 +103,7 @@ public class FabricGatewayService {
 
         Network network = gateway.getNetwork(channelName);
         contract = network.getContract(chaincodeName);
+        qsccContract = network.getContract("qscc");
         available = true;
         LOG.infof("Fabric Gateway connected: %s:%d / %s / %s", peerHost, peerPort, channelName, chaincodeName);
     }
@@ -106,6 +114,30 @@ public class FabricGatewayService {
 
     public boolean isEnabled() {
         return enabled;
+    }
+
+    public String getChannelName() {
+        return channelName;
+    }
+
+    public String getChaincodeName() {
+        return chaincodeName;
+    }
+
+    public String getChaincodeVersion() {
+        return chaincodeVersion;
+    }
+
+    public String getMspId() {
+        return mspId;
+    }
+
+    public String getPeerHost() {
+        return peerHost;
+    }
+
+    public int getPeerPort() {
+        return peerPort;
     }
 
     public int queryBalance(String accountId) throws Exception {
@@ -120,8 +152,29 @@ public class FabricGatewayService {
         return queryBalance(healthAccount);
     }
 
-    public void transfer(String fromId, String toId, int amount) throws Exception {
-        contract.submitTransaction("Transfer", fromId, toId, String.valueOf(amount));
+    /**
+     * Queries the built-in qscc system chaincode on the same channel/connection — no
+     * chaincode redeploy required, since qscc is active on every channel by default.
+     */
+    public byte[] evaluateQscc(String function, String... args) throws Exception {
+        if (!available) {
+            throw new IllegalStateException("Fabric Gateway is not connected");
+        }
+        return qsccContract.evaluateTransaction(function, args);
+    }
+
+    public FabricTransferResult transfer(String fromId, String toId, int amount) throws Exception {
+        Transaction tx = contract.newProposal("Transfer")
+                .addArguments(fromId, toId, String.valueOf(amount))
+                .build()
+                .endorse();
+        SubmittedTransaction submitted = tx.submitAsync();
+        Status status = submitted.getStatus();
+        if (!status.isSuccessful()) {
+            throw new IllegalStateException("Fabric transaction failed validation: " + status.getCode());
+        }
+        return new FabricTransferResult(status.getTransactionId(), status.getBlockNumber(),
+                status.getCode().name(), status.isSuccessful());
     }
 
     @PreDestroy

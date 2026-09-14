@@ -1,0 +1,146 @@
+<div id="tab-dashboard" class="tab-content">
+    <div class="page-heading">
+        <h2>Dashboard</h2>
+        <p>Platform overview — token supply, accounts, and Fabric network health at a glance.</p>
+    </div>
+
+    <div class="stat-grid">
+        <div class="stat-card">
+            <div class="stat-label">Total Token Supply</div>
+            <div class="stat-value">{totalSupply}</div>
+            <div class="stat-sub">TKN across all accounts</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Accounts</div>
+            <div class="stat-value">{accountCount}</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Organizations</div>
+            <div class="stat-value">{orgCount}</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Latest Fabric Block</div>
+            {#if networkStatus.latestBlockNumber}
+            <div class="stat-value">#{networkStatus.latestBlockNumber}</div>
+            {#else}
+            <div class="stat-value fabric-na">N/A</div>
+            {/if}
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Fabric Network</div>
+            {#if !networkStatus.fabricEnabled}
+            <span class="badge badge-invalid">Not configured</span>
+            {#else if networkStatus.fabricAvailable}
+            <span class="badge badge-success">Healthy</span>
+            {#else}
+            <span class="badge badge-failed">Unavailable</span>
+            {/if}
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">API / Fabric Consistency</div>
+            {#if !consistency.fabricAvailable}
+            <span class="badge badge-invalid">Unknown</span>
+            {#else if consistency.mismatchCount == 0}
+            <span class="badge badge-success">In sync</span>
+            {#else}
+            <span class="badge badge-warning">{consistency.mismatchCount} mismatch(es)</span>
+            {/if}
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-head">
+            <h2>Accounts by Bank</h2>
+            <button class="btn btn-primary btn-small" onclick="showTab('transfer')">+ New Transfer</button>
+        </div>
+        <div class="banks">
+            {#for bankEntry in banks.entrySet()}
+            <div class="bank-section">
+                <div class="bank-header">
+                    <span class="bank-name">{bankEntry.key}</span>
+                    <span class="org-tag">Org{bankEntry_count}</span>
+                </div>
+                {#for acc in bankEntry.value}
+                <div class="account-row">
+                    <div class="account-info">
+                        <div class="client">{acc.owner}</div>
+                        <div class="acc-id">{acc.id}</div>
+                    </div>
+                    <div class="account-balance">
+                        <div class="amount">{acc.balance}</div>
+                        <div class="unit">TKN</div>
+                    </div>
+                </div>
+                {/for}
+            </div>
+            {/for}
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>Recent Transactions</h2>
+        {#if recentTransactions.isEmpty()}
+        <p class="empty">Transfers will appear here after the first submitted transaction.</p>
+        {#else}
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr><th>Time</th><th>From</th><th>To</th><th>Amount</th><th>Status</th></tr>
+                </thead>
+                <tbody>
+                    {#for tx in recentTransactions}
+                    <tr>
+                        <td class="sub">{tx.timestamp}</td>
+                        <td>{tx.fromLabel}</td>
+                        <td>{tx.toLabel}</td>
+                        <td><strong>{tx.amount} TKN</strong></td>
+                        <td><span class="badge badge-{tx.status}">{tx.status}</span></td>
+                    </tr>
+                    {/for}
+                </tbody>
+            </table>
+        </div>
+        {/if}
+    </div>
+
+    <div class="card">
+        <h2>Fabric Network / Component Status</h2>
+        <div class="network-grid">
+            <div class="network-item">
+                <div class="label">Channel</div>
+                <div class="value">{networkStatus.channel ?: 'N/A'}</div>
+            </div>
+            <div class="network-item">
+                <div class="label">Chaincode</div>
+                <div class="value">{networkStatus.chaincodeName ?: 'N/A'} v{networkStatus.chaincodeVersion ?: '?'}</div>
+            </div>
+            <div class="network-item">
+                <div class="label">Peer0 Org1</div>
+                {#if networkStatus.fabricAvailable}
+                <span class="badge badge-success">Healthy</span>
+                {#else if networkStatus.fabricEnabled}
+                <span class="badge badge-failed">Unavailable</span>
+                {#else}
+                <span class="badge badge-invalid">Not configured</span>
+                {/if}
+            </div>
+            <div class="network-item">
+                <div class="label">Peer0 Org2</div>
+                <span class="badge badge-invalid">Unknown</span>
+            </div>
+            <div class="network-item">
+                <div class="label">Orderer</div>
+                <span class="badge badge-invalid">Unknown</span>
+            </div>
+            <div class="network-item">
+                <div class="label">State Database</div>
+                <span class="badge badge-invalid">Unknown</span>
+            </div>
+            <div class="network-item">
+                <div class="label">API Availability</div>
+                <span class="badge badge-success">Healthy</span>
+            </div>
+        </div>
+        <p class="note">Peer0 Org2, Orderer, and State Database health cannot be independently observed today — only one Fabric identity (Org1) is connected. Shown honestly as Unknown rather than assumed healthy.</p>
+    </div>
+</div>

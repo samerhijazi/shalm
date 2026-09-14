@@ -38,7 +38,7 @@ public class DashboardResource {
     @Produces(MediaType.TEXT_HTML)
     public TemplateInstance index() {
         List<AccountInfo> accounts = fetchAccounts();
-        return render(accounts, "", "", "worldstate");
+        return render(accounts, "", "", "dashboard", "worldstate", "network");
     }
 
     @POST
@@ -56,32 +56,48 @@ public class DashboardResource {
         List<AccountInfo> accounts = fetchAccounts();
         Map<String, AccountInfo> accountMap = accounts.stream()
                 .collect(Collectors.toMap(a -> a.id, a -> a));
+        AccountInfo fromAcc = accountMap.get(fromId);
+        AccountInfo toAcc   = accountMap.get(toId);
 
-        try {
-            TransferResponse resp = apiClient.transfer(new TransferRequest(fromId, toId, amount));
+        if (fromId == null || toId == null || fromId.equals(toId)) {
+            error = "Source and destination accounts must be different.";
+        } else if (amount <= 0) {
+            error = "Amount must be greater than zero.";
+        } else if (fromAcc != null && amount > fromAcc.balance) {
+            error = "Amount exceeds the available balance.";
+        } else {
+            try {
+                TransferResponse resp = apiClient.transfer(new TransferRequest(fromId, toId, amount));
 
-            AccountInfo fromAcc = accountMap.get(fromId);
-            AccountInfo toAcc   = accountMap.get(toId);
-            String fromLabel = fromAcc != null ? fromAcc.owner + " (" + fromAcc.bank + ")" : fromId;
-            String toLabel   = toAcc   != null ? toAcc.owner   + " (" + toAcc.bank   + ")" : toId;
+                String fromLabel = fromAcc != null ? fromAcc.owner + " (" + fromAcc.bank + ")" : fromId;
+                String toLabel   = toAcc   != null ? toAcc.owner   + " (" + toAcc.bank   + ")" : toId;
 
-            txStore.add(new TransactionRecord(
-                    resp.transactionId,
-                    fromId, fromLabel,
-                    toId,   toLabel,
-                    amount, resp.status));
+                TransactionRecord record = new TransactionRecord(
+                        resp.transactionId, fromId, fromLabel, toId, toLabel, amount, resp.status);
+                if ("committed".equals(resp.fabricStatus)) {
+                    NetworkStatus ns = fetchNetworkStatus();
+                    record.applyFabricMetadata(resp.fabricBlockNumber, resp.fabricValidationCode,
+                            ns.channel, ns.chaincodeName);
+                }
+                txStore.add(record);
 
-            if ("success".equals(resp.status)) {
-                message = "Transfer successful — TX: " + resp.transactionId;
-            } else {
-                error = "Transfer failed: " + resp.message;
+                if ("success".equals(resp.status)) {
+                    message = "Transfer submitted — TX: " + resp.transactionId + ".";
+                    if ("committed".equals(resp.fabricStatus)) {
+                        message += " Committed to Fabric block #" + resp.fabricBlockNumber + ".";
+                    } else if ("failed".equals(resp.fabricStatus)) {
+                        message += " Fabric dual-write failed; the API balance was still updated.";
+                    }
+                } else {
+                    error = "Transfer failed: " + resp.message;
+                }
+            } catch (Exception e) {
+                error = "API error: " + e.getMessage();
             }
-        } catch (Exception e) {
-            error = "API error: " + e.getMessage();
         }
 
         accounts = fetchAccounts();
-        return Response.ok(render(accounts, message, error, "transfers")).build();
+        return Response.ok(render(accounts, message, error, "transfer", "worldstate", "network")).build();
     }
 
     @POST
@@ -97,16 +113,20 @@ public class DashboardResource {
         String message = "";
         String error   = "";
 
-        try {
-            AccountInfo created = apiClient.createAccount(
-                    new CreateAccountRequest(id.trim(), owner.trim(), bank, initialBalance));
-            message = "Account " + created.id + " created for " + created.owner + " (" + created.bank + ")";
-        } catch (Exception e) {
-            error = "Create failed: " + e.getMessage();
+        if (id == null || id.isBlank() || owner == null || owner.isBlank()) {
+            error = "Account ID and owner are required.";
+        } else {
+            try {
+                AccountInfo created = apiClient.createAccount(
+                        new CreateAccountRequest(id.trim(), owner.trim(), bank, initialBalance));
+                message = "Account " + created.id + " created for " + created.owner + " (" + created.bank + ")";
+            } catch (Exception e) {
+                error = "Create failed: " + e.getMessage();
+            }
         }
 
         List<AccountInfo> accounts = fetchAccounts();
-        return Response.ok(render(accounts, message, error, "manage")).build();
+        return Response.ok(render(accounts, message, error, "accounts", "worldstate", "network")).build();
     }
 
     @POST
@@ -120,53 +140,105 @@ public class DashboardResource {
         try {
             Response apiResp = apiClient.deleteAccount(id);
             if (apiResp.getStatus() == 204) {
-                message = "Account " + id + " deleted.";
+                message = "Account " + id + " closed.";
             } else {
-                error = "Delete failed: " + apiResp.readEntity(String.class);
+                error = "Close failed: " + apiResp.readEntity(String.class);
             }
         } catch (Exception e) {
-            error = "Delete failed: " + e.getMessage();
+            error = "Close failed: " + e.getMessage();
         }
 
         List<AccountInfo> accounts = fetchAccounts();
-        return Response.ok(render(accounts, message, error, "manage")).build();
+        return Response.ok(render(accounts, message, error, "accounts", "worldstate", "network")).build();
+    }
+
+    @POST
+    @Path("/operations/consistency/run")
+    @Produces(MediaType.TEXT_HTML)
+    public Response runConsistencyCheck() {
+        List<AccountInfo> accounts = fetchAccounts();
+        return Response.ok(render(accounts, "Consistency check completed.", "",
+                "operations", "worldstate", "consistency")).build();
     }
 
     // ── helpers ───────────────────────────────────────────────────────────────
 
-    private TemplateInstance render(List<AccountInfo> accounts,
-                                    String message, String error, String activeTab) {
+    private TemplateInstance render(List<AccountInfo> accounts, String message, String error,
+                                     String activeTab, String ledgerSubTab, String opsSubTab) {
         String apiError = "";
         if (accounts.isEmpty() && error.isEmpty()) {
             apiError = "Cannot reach the API server — data may be incomplete.";
         }
         String effectiveError = error.isEmpty() ? apiError : error;
 
+        NetworkStatus networkStatus = fetchNetworkStatus();
+        ConsistencyReport consistency = fetchConsistency();
+        BlocksResponse blocksResponse = fetchBlocks();
+
+        long totalSupply = accounts.stream().mapToLong(a -> a.balance).sum();
+        long orgCount = accounts.stream().map(a -> a.bank).distinct().count();
+
+        Map<String, List<TransactionRecord>> txByAccount = accounts.stream()
+                .collect(Collectors.toMap(a -> a.id, a -> txStore.getForAccount(a.id)));
+
+        String closeAccountWarning = networkStatus.fabricAvailable
+                ? "Deletes the account from the current world state. Its transaction history remains permanently recorded on the blockchain."
+                : "This permanently removes the account from the in-memory API store. There is no blockchain record to preserve.";
+
         return dashboard
-                .data("banks",        groupByBank(accounts))
-                .data("accounts",     accounts)
-                .data("ledger",       buildLedger(accounts))
-                .data("transactions", txStore.getAll())
-                .data("message",      message)
-                .data("error",        effectiveError)
-                .data("activeTab",    activeTab)
-                .data("apiTests",     loadApiTestResults())
-                .data("uiTests",      loadUiTestResults());
+                .data("banks",              groupByBank(accounts))
+                .data("accounts",           accounts)
+                .data("transactions",       txStore.getAll())
+                .data("recentTransactions", txStore.getRecent(5))
+                .data("message",            message)
+                .data("error",              effectiveError)
+                .data("activeTab",          activeTab)
+                .data("ledgerSubTab",       ledgerSubTab)
+                .data("opsSubTab",          opsSubTab)
+                .data("apiTests",           loadApiTestResults())
+                .data("uiTests",            loadUiTestResults())
+                .data("networkStatus",      networkStatus)
+                .data("consistency",        consistency)
+                .data("blocksResponse",     blocksResponse)
+                .data("totalSupply",        totalSupply)
+                .data("accountCount",       accounts.size())
+                .data("orgCount",           orgCount)
+                .data("txByAccount",        txByAccount)
+                .data("closeAccountWarning", closeAccountWarning);
     }
 
-    private List<LedgerEntry> buildLedger(List<AccountInfo> accounts) {
-        List<LedgerEntry> ledger = new ArrayList<>();
-        for (AccountInfo acc : accounts) {
-            String fabricBal;
-            try {
-                BalanceResponse fb = apiClient.getFabricBalance(acc.id);
-                fabricBal = String.valueOf(fb.balance);
-            } catch (Exception e) {
-                fabricBal = "N/A";
-            }
-            ledger.add(new LedgerEntry(acc, fabricBal));
+    private NetworkStatus fetchNetworkStatus() {
+        try {
+            return apiClient.getNetworkStatus();
+        } catch (Exception e) {
+            NetworkStatus ns = new NetworkStatus();
+            ns.fabricEnabled = false;
+            ns.fabricAvailable = false;
+            ns.apiHealth = "Unknown";
+            return ns;
         }
-        return ledger;
+    }
+
+    private ConsistencyReport fetchConsistency() {
+        try {
+            return apiClient.getConsistency();
+        } catch (Exception e) {
+            ConsistencyReport report = new ConsistencyReport();
+            report.entries = List.of();
+            report.fabricAvailable = false;
+            return report;
+        }
+    }
+
+    private BlocksResponse fetchBlocks() {
+        try {
+            return apiClient.getBlocks(20);
+        } catch (Exception e) {
+            BlocksResponse resp = new BlocksResponse();
+            resp.available = false;
+            resp.blocks = List.of();
+            return resp;
+        }
     }
 
     private List<AccountInfo> fetchAccounts() {

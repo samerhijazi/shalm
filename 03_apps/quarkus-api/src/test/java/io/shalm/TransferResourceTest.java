@@ -39,7 +39,9 @@ class TransferResourceTest {
           .when().post("/transfer")
           .then()
              .statusCode(200)
-             .body("status", equalTo("success"));
+             .body("status", equalTo("success"))
+             .body("fabricStatus", equalTo("unavailable"))
+             .body("fabricTransactionId", equalTo(null));
 
         given().when().get("/balance/" + FROM).then().body("balance", equalTo(300));
         given().when().get("/balance/" + TO).then().body("balance", equalTo(300));

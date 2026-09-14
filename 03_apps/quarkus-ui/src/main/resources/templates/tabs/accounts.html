@@ -1,0 +1,152 @@
+<div id="tab-accounts" class="tab-content">
+    <div class="page-heading">
+        <h2>Accounts</h2>
+        <p>Search, sort, and manage every account across both banks in one place.</p>
+    </div>
+
+    <div class="card">
+        <div class="toolbar">
+            <div class="form-group">
+                <label for="acc-search">Search</label>
+                <input type="search" id="acc-search" placeholder="Account ID or owner…" oninput="filterAccounts()" aria-label="Search accounts by ID or owner">
+            </div>
+            <div class="form-group">
+                <label for="acc-org-filter">Organization</label>
+                <select id="acc-org-filter" onchange="filterAccounts()" aria-label="Filter accounts by organization">
+                    <option value="">All</option>
+                    {#for bankEntry in banks.entrySet()}
+                    <option value="{bankEntry.key}">{bankEntry.key}</option>
+                    {/for}
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="acc-sort">Sort by</label>
+                <select id="acc-sort" onchange="sortAccounts()" aria-label="Sort accounts">
+                    <option value="owner">Owner</option>
+                    <option value="balance">Balance</option>
+                    <option value="updated">Last updated</option>
+                </select>
+            </div>
+            <button class="btn btn-primary" style="margin-left:auto" onclick="openModal('create-account-modal')">+ Create Account</button>
+        </div>
+
+        {#if accounts.isEmpty()}
+        <p class="empty">No accounts yet. Create one to get started.</p>
+        {#else}
+        <div class="table-wrap">
+            <table id="accounts-table" class="responsive-cards">
+                <thead>
+                    <tr>
+                        <th>Account ID</th>
+                        <th>Owner</th>
+                        <th>Bank / Org</th>
+                        <th>Balance</th>
+                        <th>Last Updated</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {#for acc in accounts}
+                    <tr class="account-data-row" data-id="{acc.id}" data-owner="{acc.owner}" data-bank="{acc.bank}" data-balance="{acc.balance}" data-updated="{acc.updatedAt ?: ''}">
+                        <td data-label="Account ID" class="tx-id">{acc.id}</td>
+                        <td data-label="Owner">{acc.owner}</td>
+                        <td data-label="Bank / Org">{acc.bank}</td>
+                        <td data-label="Balance"><strong>{acc.balance} TKN</strong></td>
+                        <td data-label="Last Updated" class="sub" title="{acc.updatedAt ?: ''}">{acc.updatedAt ?: 'N/A'}</td>
+                        <td data-label="Actions">
+                            <div class="action-links">
+                                <button type="button" onclick="toggleDetail('detail-{acc.id}')">View</button>
+                                <button type="button" onclick="showTab('transfer'); var f=document.getElementById('transfer-from'); if(f) f.value='{acc.id}';">Transfer</button>
+                                <button type="button" class="danger-link" onclick="openModal('close-modal-{acc.id}')">Close</button>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr class="detail-row" id="detail-{acc.id}">
+                        <td colspan="6">
+                            <div class="form-grid">
+                                <div><strong>Account ID:</strong> {acc.id}</div>
+                                <div><strong>Owner:</strong> {acc.owner}</div>
+                                <div><strong>Bank / Fabric Org:</strong> {acc.bank}</div>
+                                <div><strong>Current Balance:</strong> {acc.balance} TKN</div>
+                                <div><strong>Creation Transaction ID:</strong> <span class="fabric-na">Not available</span></div>
+                                <div><strong>Creation Timestamp:</strong> <span class="fabric-na">Not available</span></div>
+                            </div>
+                            <p class="section-label" style="margin-top:1rem">Account Transaction History</p>
+                            {#if txByAccount.get(acc.id).isEmpty()}
+                            <p class="empty">No transactions for this account yet.</p>
+                            {#else}
+                            <div class="table-wrap">
+                                <table>
+                                    <thead><tr><th>Time</th><th>From</th><th>To</th><th>Amount</th><th>Status</th></tr></thead>
+                                    <tbody>
+                                        {#for tx in txByAccount.get(acc.id)}
+                                        <tr>
+                                            <td class="sub">{tx.timestamp}</td>
+                                            <td>{tx.fromId}</td>
+                                            <td>{tx.toId}</td>
+                                            <td>{tx.amount} TKN</td>
+                                            <td><span class="badge badge-{tx.status}">{tx.status}</span></td>
+                                        </tr>
+                                        {/for}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {/if}
+                        </td>
+                    </tr>
+                    {/for}
+                </tbody>
+            </table>
+        </div>
+        {#for acc in accounts}
+        <div class="modal-overlay" id="close-modal-{acc.id}">
+            <div class="modal-box">
+                <h2>Close Account {acc.id}?</h2>
+                <p class="note">{closeAccountWarning}</p>
+                <form method="POST" action="/manage/delete" onsubmit="disableSubmit(this)">
+                    <input type="hidden" name="id" value="{acc.id}">
+                    <div class="form-row">
+                        <button type="button" class="btn btn-secondary" onclick="closeModal('close-modal-{acc.id}')">Cancel</button>
+                        <button type="submit" class="btn btn-danger">Close Account</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        {/for}
+        {/if}
+    </div>
+</div>
+
+<!-- Create Account modal -->
+<div class="modal-overlay" id="create-account-modal">
+    <div class="modal-box">
+        <h2>Create Account</h2>
+        <form method="POST" action="/manage/create" onsubmit="disableSubmit(this)">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="new-id">Account ID</label>
+                    <input id="new-id" type="text" name="id" placeholder="ACC-B1-003" required>
+                </div>
+                <div class="form-group">
+                    <label for="new-owner">Owner Name</label>
+                    <input id="new-owner" type="text" name="owner" placeholder="ClientE" required>
+                </div>
+                <div class="form-group">
+                    <label for="new-bank">Bank</label>
+                    <select id="new-bank" name="bank">
+                        <option value="Bank1">Bank1 (Org1)</option>
+                        <option value="Bank2">Bank2 (Org2)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="new-balance">Initial Balance</label>
+                    <input id="new-balance" type="number" name="initialBalance" min="0" value="500" required>
+                </div>
+            </div>
+            <div class="form-row">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('create-account-modal')">Cancel</button>
+                <button type="submit" class="btn btn-primary">Create Account</button>
+            </div>
+        </form>
+    </div>
+</div>

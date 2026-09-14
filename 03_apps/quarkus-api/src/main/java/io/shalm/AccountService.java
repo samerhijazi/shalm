@@ -2,6 +2,7 @@ package io.shalm;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.Map;
@@ -55,6 +56,9 @@ public class AccountService {
         if (from.balance < amount) return false;
         from.balance -= amount;
         to.balance   += amount;
+        Instant now = Instant.now();
+        from.updatedAt = now;
+        to.updatedAt   = now;
         return true;
     }
 }

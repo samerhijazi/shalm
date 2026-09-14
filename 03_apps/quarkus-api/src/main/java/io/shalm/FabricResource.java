@@ -8,7 +8,6 @@ import org.jboss.logging.Logger;
 import org.jboss.logging.MDC;
 
 import java.util.Map;
-import java.util.UUID;
 
 @Path("/fabric")
 @Produces(MediaType.APPLICATION_JSON)
@@ -65,21 +64,24 @@ public class FabricResource {
                     .entity(Map.of("error", "Bad request: from, to, and amount > 0 required"))
                     .build();
         }
-        String txId = UUID.randomUUID().toString();
         try {
-            fabric.transfer(req.from, req.to, req.amount);
-            MDC.put("tx_id", txId);
+            FabricTransferResult result = fabric.transfer(req.from, req.to, req.amount);
+            MDC.put("tx_id", result.transactionId);
             MDC.put("from", req.from);
             MDC.put("to", req.to);
             MDC.put("amount", req.amount);
             MDC.put("ledger", "fabric");
             LOG.info("fabric-transfer-success");
             MDC.clear();
-            return Response.ok(Map.of("txId", txId, "status", "success")).build();
+            return Response.ok(Map.of(
+                    "txId", result.transactionId,
+                    "status", "success",
+                    "blockNumber", result.blockNumber,
+                    "validationCode", result.validationCode)).build();
         } catch (Exception e) {
             LOG.warnf("Fabric transfer failed [%s -> %s %d]: %s", req.from, req.to, req.amount, e.getMessage());
             return Response.status(422)
-                    .entity(Map.of("txId", txId, "status", "failed", "error", e.getMessage()))
+                    .entity(Map.of("status", "failed", "error", e.getMessage()))
                     .build();
         }
     }

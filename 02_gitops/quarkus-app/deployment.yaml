@@ -25,6 +25,13 @@ spec:
             # and patching in the fabric-org1-admin secret volume below.
             - name: FABRIC_ENABLED
               value: "true"
+            # Displayed on the Operations -> Network page. Keep in sync with
+            # chaincode-version in 02_gitops/fabric/chaincode-config.yaml — that
+            # ConfigMap lives in the fabric namespace and can't be mounted here
+            # directly (ConfigMaps are namespace-scoped, same as the Fabric
+            # identity secret, see CLAUDE.md Known Issues).
+            - name: FABRIC_CHAINCODE_VERSION
+              value: "1.0"
           readinessProbe:
             httpGet:
               path: /health/ready

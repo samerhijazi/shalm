@@ -22,10 +22,12 @@ Every line of infrastructure config, application code, GitOps manifest, and CI/C
 ## Architecture
 
 ```
-quarkus-ui  (Qute templates, port 30801)
+quarkus-ui  (Qute templates, port 30801) — 5 tabs: Dashboard, Accounts, Transfer, Ledger, Operations
     └── REST client → quarkus-api  (port 30800)
                           ├── in-memory account state (4 accounts, 2 banks)
                           └── /fabric/* → FabricGatewayService → Hyperledger Fabric peer (gRPC)
+                                            ├── Transfer: best-effort dual-write (in-memory + Fabric)
+                                            └── qscc queries → real blocks/chain info, no chaincode change
 
 Observability:  Prometheus · Grafana · Loki · Promtail  (namespace: observability)
                 Alertmanager  (routing + inhibit rules)
@@ -122,7 +124,7 @@ cd 03_apps/quarkus-api && mvn test
 cd 03_apps/quarkus-ui && mvn test
 cd 04_blockchain/fabric/chaincode && mvn test
 
-# Verify Fabric, the API, and the rendered Blockchain tab after deployment
+# Verify Fabric, the API, and the rendered Ledger > Blockchain tab after deployment
 ./01_infrastructure/scripts/verify-fabric.sh
 
 # Check cluster state

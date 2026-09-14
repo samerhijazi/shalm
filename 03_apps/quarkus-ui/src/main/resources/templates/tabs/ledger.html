@@ -1,0 +1,123 @@
+<div id="tab-ledger" class="tab-content">
+    <div class="page-heading">
+        <h2>Ledger</h2>
+        <p>World state is the current value of every key; blockchain is the immutable, ordered history behind it. Together they make up the ledger.</p>
+    </div>
+
+    <nav class="subtabs" aria-label="Ledger views">
+        <button class="subtab-btn" data-group="ledger" data-name="worldstate" onclick="showSubTab('ledger','worldstate')">World State</button>
+        <button class="subtab-btn" data-group="ledger" data-name="blockchain" onclick="showSubTab('ledger','blockchain')">Blockchain</button>
+    </nav>
+
+    <!-- ── World State ── -->
+    <div class="subtab-content" data-group="ledger" id="subtab-ledger-worldstate">
+        <div class="card">
+            <h2>Current World State</h2>
+            {#if consistency.entries.isEmpty()}
+            <p class="empty">No accounts in world state yet.</p>
+            {#else}
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Account ID</th><th>Owner</th><th>Organization</th><th>Current Balance</th><th>State Version</th><th>Verification</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {#for entry in consistency.entries}
+                        <tr>
+                            <td class="tx-id">{entry.accountId}</td>
+                            <td>{entry.owner}</td>
+                            <td>{entry.bank}</td>
+                            <td class="ledger-amount">{entry.apiBalance} TKN</td>
+                            <td><span class="fabric-na">Not available</span></td>
+                            <td>
+                                {#if !consistency.fabricAvailable}
+                                <span class="badge badge-invalid">Unverified</span>
+                                {#else if entry.match}
+                                <span class="badge badge-success">Verified</span>
+                                {#else}
+                                <span class="badge badge-warning">Diverged</span>
+                                {/if}
+                            </td>
+                        </tr>
+                        {/for}
+                    </tbody>
+                </table>
+            </div>
+            {/if}
+            <p class="note">This shows the authoritative current balance per account with a compact verification badge. For the detailed API-vs-Fabric comparison and discrepancy breakdown, see Operations → Consistency.</p>
+        </div>
+    </div>
+
+    <!-- ── Blockchain ── -->
+    <div class="subtab-content" data-group="ledger" id="subtab-ledger-blockchain">
+        <div class="card">
+            <h2>Blockchain — Blocks &amp; Transactions</h2>
+            {#if !blocksResponse.available}
+            <p class="empty">Blockchain data is unavailable — Fabric is not configured or not reachable. This is a real gap, not a placeholder: enable and connect Fabric to see live blocks here.</p>
+            {#else if blocksResponse.blocks.isEmpty()}
+            <p class="empty">No blocks found on the channel yet.</p>
+            {#else}
+            <div class="table-wrap">
+                <table class="responsive-cards">
+                    <thead>
+                        <tr><th>Block #</th><th>Transactions</th><th>Data Hash</th><th>Previous Hash</th><th>Timestamp</th></tr>
+                    </thead>
+                    <tbody>
+                        {#for block in blocksResponse.blocks}
+                        <tr class="clickable" onclick="toggleDetail('block-detail-{block_count}')">
+                            <td data-label="Block #">#{block.number}</td>
+                            <td data-label="Transactions">{block.txCount}</td>
+                            <td data-label="Data Hash" class="hash">{block.shortDataHash()}
+                                <button type="button" class="copy-btn" onclick="event.stopPropagation(); copyText('{block.dataHash}', this)">Copy</button>
+                            </td>
+                            <td data-label="Previous Hash" class="hash">{block.shortPreviousHash()}
+                                <button type="button" class="copy-btn" onclick="event.stopPropagation(); copyText('{block.previousHash}', this)">Copy</button>
+                            </td>
+                            <td data-label="Timestamp" class="sub">{block.timestamp ?: 'N/A'}</td>
+                        </tr>
+                        <tr class="detail-row" id="block-detail-{block_count}">
+                            <td colspan="5">
+                                <div class="form-grid">
+                                    <div><strong>Block Number:</strong> {block.number}</div>
+                                    <div><strong>Channel:</strong> {block.channel}</div>
+                                    <div><strong>Transaction Count:</strong> {block.txCount}</div>
+                                    <div><strong>Data Hash:</strong> <span class="hash">{block.dataHash}</span></div>
+                                    <div><strong>Previous Hash:</strong> <span class="hash">{block.previousHash}</span></div>
+                                </div>
+                                {#if block.transactions.isEmpty()}
+                                <p class="empty">No transactions in this block.</p>
+                                {#else}
+                                <p class="section-label" style="margin-top:1rem">Transactions</p>
+                                <div class="table-wrap">
+                                    <table>
+                                        <thead><tr><th>Transaction ID</th><th>Type</th><th>Validation Status</th></tr></thead>
+                                        <tbody>
+                                            {#for tx in block.transactions}
+                                            <tr>
+                                                <td class="tx-id">{tx.txId ?: 'N/A'}</td>
+                                                <td>{tx.type}</td>
+                                                <td>
+                                                    {#if tx.validationCode == 'VALID'}
+                                                    <span class="badge badge-success">Valid</span>
+                                                    {#else}
+                                                    <span class="badge badge-failed">{tx.validationCode}</span>
+                                                    {/if}
+                                                </td>
+                                            </tr>
+                                            {/for}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                {/if}
+                            </td>
+                        </tr>
+                        {/for}
+                    </tbody>
+                </table>
+            </div>
+            {/if}
+        </div>
+    </div>
+</div>

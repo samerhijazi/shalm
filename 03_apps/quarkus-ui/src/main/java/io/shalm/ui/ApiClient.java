@@ -16,16 +16,6 @@ public interface ApiClient {
     @Produces(MediaType.APPLICATION_JSON)
     List<AccountInfo> getAllAccounts();
 
-    @GET
-    @Path("/balance/{id}")
-    @Produces(MediaType.APPLICATION_JSON)
-    BalanceResponse getBalance(@PathParam("id") String id);
-
-    @GET
-    @Path("/fabric/balance/{id}")
-    @Produces(MediaType.APPLICATION_JSON)
-    BalanceResponse getFabricBalance(@PathParam("id") String id);
-
     @POST
     @Path("/transfer")
     @Consumes(MediaType.APPLICATION_JSON)
@@ -47,4 +37,24 @@ public interface ApiClient {
     @Path("/tests")
     @Produces(MediaType.APPLICATION_JSON)
     TestSummary getApiTestResults();
+
+    @GET
+    @Path("/fabric/blocks")
+    @Produces(MediaType.APPLICATION_JSON)
+    BlocksResponse getBlocks(@QueryParam("limit") int limit);
+
+    @GET
+    @Path("/fabric/blocks/{number}")
+    @Produces(MediaType.APPLICATION_JSON)
+    BlockDetail getBlock(@PathParam("number") long number);
+
+    @GET
+    @Path("/fabric/network-status")
+    @Produces(MediaType.APPLICATION_JSON)
+    NetworkStatus getNetworkStatus();
+
+    @GET
+    @Path("/consistency")
+    @Produces(MediaType.APPLICATION_JSON)
+    ConsistencyReport getConsistency();
 }

@@ -24,11 +24,11 @@ for account in ACC-B1-001 ACC-B1-002 ACC-B2-001 ACC-B2-002; do
   echo "  $account: passed"
 done
 
-echo "Checking the rendered Blockchain tab..."
+echo "Checking the rendered Ledger > Blockchain tab..."
 curl --fail --silent --show-error --max-time 20 \
   "$UI_URL/" -o "$work_dir/dashboard.html"
-if grep -q 'Fabric ledger not available' "$work_dir/dashboard.html"; then
-  echo "Blockchain tab reports that the Fabric ledger is unavailable" >&2
+if grep -q 'Blockchain data is unavailable' "$work_dir/dashboard.html"; then
+  echo "Ledger > Blockchain tab reports that Fabric block data is unavailable" >&2
   exit 1
 fi
 

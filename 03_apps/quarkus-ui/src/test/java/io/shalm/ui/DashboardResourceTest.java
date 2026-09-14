@@ -12,6 +12,8 @@ import java.util.List;
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.containsString;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
@@ -27,7 +29,51 @@ class DashboardResourceTest {
         when(apiClient.getAllAccounts()).thenReturn(List.of(
                 accountInfo("ACC-B1-001", "ClientA", "Bank1", 1000),
                 accountInfo("ACC-B2-001", "ClientB", "Bank2", 1000)));
-        when(apiClient.getFabricBalance(anyString())).thenThrow(new RuntimeException("fabric disabled"));
+
+        NetworkStatus disabledStatus = new NetworkStatus();
+        disabledStatus.channel = "mychannel";
+        disabledStatus.chaincodeName = "bank-transfer";
+        disabledStatus.chaincodeVersion = "unknown";
+        disabledStatus.fabricEnabled = false;
+        disabledStatus.fabricAvailable = false;
+        disabledStatus.lastCheckedTimestamp = "2026-09-14T12:00:00Z";
+        when(apiClient.getNetworkStatus()).thenReturn(disabledStatus);
+
+        ConsistencyReport disabledReport = new ConsistencyReport();
+        disabledReport.entries = List.of();
+        disabledReport.fabricAvailable = false;
+        disabledReport.totalChecked = 0;
+        disabledReport.mismatchCount = 0;
+        when(apiClient.getConsistency()).thenReturn(disabledReport);
+
+        BlocksResponse unavailableBlocks = new BlocksResponse();
+        unavailableBlocks.available = false;
+        unavailableBlocks.blocks = List.of();
+        when(apiClient.getBlocks(anyInt())).thenReturn(unavailableBlocks);
+        when(apiClient.getBlock(anyLong())).thenThrow(new RuntimeException("not found"));
+    }
+
+    @Test
+    void index_defaultsToDashboardTab() {
+        given()
+          .when().get("/")
+          .then()
+             .statusCode(200)
+             .body(containsString("id=\"tab-dashboard\""));
+    }
+
+    @Test
+    void index_rendersExactlyFiveTopLevelTabs() {
+        given()
+          .when().get("/")
+          .then()
+             .statusCode(200)
+             .body(containsString(">Dashboard<"))
+             .body(containsString(">Accounts<"))
+             .body(containsString(">Transfer<"))
+             .body(containsString(">Ledger<"))
+             .body(containsString(">Operations<"))
+             .body(org.hamcrest.Matchers.not(containsString("Manage Accounts")));
     }
 
     @Test
@@ -38,6 +84,34 @@ class DashboardResourceTest {
              .statusCode(200)
              .body(containsString("ClientA"))
              .body(containsString("ClientB"));
+    }
+
+    @Test
+    void ledgerBlockchainSubtab_showsUnavailableWhenFabricDisabled() {
+        given()
+          .when().get("/")
+          .then()
+             .statusCode(200)
+             .body(containsString("Blockchain data is unavailable"));
+    }
+
+    @Test
+    void accountsTab_closeAccountWarningIsInMemoryWordingWhenFabricDisabled() {
+        given()
+          .when().get("/")
+          .then()
+             .statusCode(200)
+             .body(containsString("This permanently removes the account from the in-memory API store"))
+             .body(org.hamcrest.Matchers.not(containsString("permanently recorded on the blockchain")));
+    }
+
+    @Test
+    void operationsConsistency_rendersEmptyStateWhenFabricDisabled() {
+        given()
+          .when().get("/")
+          .then()
+             .statusCode(200)
+             .body(containsString("Fabric ledger not available — API balances shown only"));
     }
 
     @Test
@@ -63,6 +137,7 @@ class DashboardResourceTest {
         resp.transactionId = "11111111-2222-3333-4444-555555555555";
         resp.status = "success";
         resp.message = "Transfer completed";
+        resp.fabricStatus = "unavailable";
         when(apiClient.transfer(any())).thenReturn(resp);
 
         given()
@@ -73,7 +148,46 @@ class DashboardResourceTest {
           .when().post("/transfer")
           .then()
              .statusCode(200)
-             .body(containsString("Transfer successful"));
+             .body(containsString("Transfer submitted"));
+    }
+
+    @Test
+    void transfer_sameAccountRejectedServerSide() {
+        given()
+          .contentType("application/x-www-form-urlencoded")
+          .formParam("from", "ACC-B1-001")
+          .formParam("to", "ACC-B1-001")
+          .formParam("amount", "100")
+          .when().post("/transfer")
+          .then()
+             .statusCode(200)
+             .body(containsString("must be different"));
+    }
+
+    @Test
+    void transfer_zeroAmountRejectedServerSide() {
+        given()
+          .contentType("application/x-www-form-urlencoded")
+          .formParam("from", "ACC-B1-001")
+          .formParam("to", "ACC-B2-001")
+          .formParam("amount", "0")
+          .when().post("/transfer")
+          .then()
+             .statusCode(200)
+             .body(containsString("greater than zero"));
+    }
+
+    @Test
+    void transfer_amountExceedingBalanceRejectedServerSide() {
+        given()
+          .contentType("application/x-www-form-urlencoded")
+          .formParam("from", "ACC-B1-001")
+          .formParam("to", "ACC-B2-001")
+          .formParam("amount", "999999")
+          .when().post("/transfer")
+          .then()
+             .statusCode(200)
+             .body(containsString("exceeds the available balance"));
     }
 
     @Test
@@ -101,7 +215,16 @@ class DashboardResourceTest {
           .when().post("/manage/delete")
           .then()
              .statusCode(200)
-             .body(containsString("deleted"));
+             .body(containsString("closed"));
+    }
+
+    @Test
+    void runConsistencyCheck_rendersOperationsTab() {
+        given()
+          .when().post("/operations/consistency/run")
+          .then()
+             .statusCode(200)
+             .body(containsString("Consistency check completed"));
     }
 
     private static AccountInfo accountInfo(String id, String owner, String bank, int balance) {

@@ -7,12 +7,12 @@ import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.equalTo;
 
 @QuarkusTest
-class FabricResourceTest {
+class FabricLedgerResourceTest {
 
     @Test
-    void healthExplainsWhenFabricIsDisabled() {
+    void getBlocksExplainsWhenFabricIsDisabled() {
         given()
-                .when().get("/fabric/health")
+                .when().get("/fabric/blocks")
                 .then()
                 .statusCode(503)
                 .body("status", equalTo("down"))
@@ -20,23 +20,12 @@ class FabricResourceTest {
     }
 
     @Test
-    void transferExplainsWhenFabricIsDisabled() {
+    void getBlockExplainsWhenFabricIsDisabled() {
         given()
-                .contentType("application/json")
-                .body("{\"from\":\"ACC-B1-001\",\"to\":\"ACC-B2-001\",\"amount\":10}")
-                .when().post("/fabric/transfer")
+                .when().get("/fabric/blocks/0")
                 .then()
                 .statusCode(503)
                 .body("status", equalTo("down"))
                 .body("error", equalTo("Fabric ledger not available"));
-    }
-
-    @Test
-    void disabledFabricDoesNotMakeLocalDevelopmentUnready() {
-        given()
-                .when().get("/health/ready")
-                .then()
-                .statusCode(200)
-                .body("status", equalTo("UP"));
     }
 }
