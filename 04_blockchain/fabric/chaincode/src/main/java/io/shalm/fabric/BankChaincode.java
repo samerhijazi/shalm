@@ -7,6 +7,7 @@ import org.hyperledger.fabric.shim.ChaincodeStub;
 import org.hyperledger.fabric.shim.ResponseUtils;
 import org.hyperledger.fabric.traces.Traces;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Properties;
 
@@ -66,11 +67,11 @@ public class BankChaincode extends ChaincodeBase {
                 case "QueryBalance":
                     requireArgs(p, 1, "QueryBalance(accountId)");
                     int bal = queryBalance(stub, p.get(0));
-                    return ResponseUtils.newSuccessResponse(String.valueOf(bal));
+                    return payload(String.valueOf(bal));
 
                 case "getAccount":
                     requireArgs(p, 1, "getAccount(accountId)");
-                    return ResponseUtils.newSuccessResponse(requireRaw(stub, p.get(0)));
+                    return payload(requireRaw(stub, p.get(0)));
 
                 case "createAccount":
                     requireArgs(p, 4, "createAccount(id, bankId, owner, initialBalance)");
@@ -174,5 +175,9 @@ public class BankChaincode extends ChaincodeBase {
         if (args.size() < n) {
             throw new IllegalArgumentException("Expected " + n + " args: " + usage);
         }
+    }
+
+    private static Response payload(String value) {
+        return ResponseUtils.newSuccessResponse(value.getBytes(StandardCharsets.UTF_8));
     }
 }
