@@ -4,10 +4,10 @@ metadata:
   name: fabric-setup
   namespace: fabric
   annotations:
-    # Re-run this job manually if you need to re-initialize the channel/chaincode.
-    # Delete and re-create: kubectl delete job fabric-setup -n fabric && kubectl apply -f 02_gitops/fabric/setup-job.yaml
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
+    argocd.argoproj.io/sync-wave: "1"
 spec:
-  ttlSecondsAfterFinished: 600
   backoffLimit: 3
   template:
     metadata:
@@ -64,6 +64,31 @@ spec:
         - name: setup
           image: hyperledger/fabric-tools:2.5
           env:
+            - name: CHAINCODE_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: fabric-chaincode-config
+                  key: chaincode-name
+            - name: CHAINCODE_VERSION
+              valueFrom:
+                configMapKeyRef:
+                  name: fabric-chaincode-config
+                  key: chaincode-version
+            - name: CHAINCODE_SEQUENCE
+              valueFrom:
+                configMapKeyRef:
+                  name: fabric-chaincode-config
+                  key: chaincode-sequence
+            - name: CHAINCODE_LABEL
+              valueFrom:
+                configMapKeyRef:
+                  name: fabric-chaincode-config
+                  key: chaincode-label
+            - name: CHAINCODE_ADDRESS
+              valueFrom:
+                configMapKeyRef:
+                  name: fabric-chaincode-config
+                  key: chaincode-address
             - name: EXPECTED_CHAINCODE_ID
               valueFrom:
                 configMapKeyRef:
@@ -115,9 +140,9 @@ spec:
               echo "==> Packaging CCAAS chaincode..."
               mkdir -p /tmp/ccpkg
 
-              cat > /tmp/connection.json << 'EOF'
+              cat > /tmp/connection.json << EOF
               {
-                "address": "fabric-chaincode.fabric.svc.cluster.local:9999",
+                "address": "$CHAINCODE_ADDRESS",
                 "dial_timeout": "10s",
                 "tls_required": false
               }
@@ -125,10 +150,10 @@ spec:
 
               tar --mtime='@0' -czf /tmp/ccpkg/code.tar.gz -C /tmp connection.json
 
-              cat > /tmp/ccpkg/metadata.json << 'EOF'
+              cat > /tmp/ccpkg/metadata.json << EOF
               {
                 "type": "ccaas",
-                "label": "bank-transfer_1.0"
+                "label": "$CHAINCODE_LABEL"
               }
               EOF
 
@@ -141,12 +166,8 @@ spec:
               export CORE_PEER_MSPCONFIGPATH=/org1-admin-msp
               peer lifecycle chaincode install /tmp/bank-transfer.tar.gz 2>&1 || true
 
-              # Deterministic packaging (tar --mtime='@0') means the package ID is
-              # just the label + sha256 of the package tarball -- compute it
-              # directly instead of grepping `queryinstalled`, whose output
-              # accumulates one line per historical install and previously made
-              # $PACKAGE_ID a multi-line garbage string matching nothing real.
-              PACKAGE_ID="bank-transfer_1.0:$(sha256sum /tmp/bank-transfer.tar.gz | awk '{print $1}')"
+              # Use Fabric's lifecycle command as the canonical package-ID source.
+              PACKAGE_ID="$(peer lifecycle chaincode calculatepackageid /tmp/bank-transfer.tar.gz)"
               echo "Package ID: $PACKAGE_ID"
               if [ "$PACKAGE_ID" != "$EXPECTED_CHAINCODE_ID" ]; then
                 echo "Package ID mismatch: update fabric-chaincode-config before deploying"
@@ -169,9 +190,9 @@ spec:
               export CORE_PEER_MSPCONFIGPATH=/org1-admin-msp
               peer lifecycle chaincode approveformyorg \
                 --channelID mychannel \
-                --name bank-transfer \
-                --version 1.0 \
-                --sequence 4 \
+                --name "$CHAINCODE_NAME" \
+                --version "$CHAINCODE_VERSION" \
+                --sequence "$CHAINCODE_SEQUENCE" \
                 --package-id "$PACKAGE_ID" \
                 -o orderer.fabric.svc.cluster.local:7050 \
                 --tls=false 2>&1 || echo "Org1 approval may already exist"
@@ -183,9 +204,9 @@ spec:
               export CORE_PEER_MSPCONFIGPATH=/org2-admin-msp
               peer lifecycle chaincode approveformyorg \
                 --channelID mychannel \
-                --name bank-transfer \
-                --version 1.0 \
-                --sequence 4 \
+                --name "$CHAINCODE_NAME" \
+                --version "$CHAINCODE_VERSION" \
+                --sequence "$CHAINCODE_SEQUENCE" \
                 --package-id "$PACKAGE_ID" \
                 -o orderer.fabric.svc.cluster.local:7050 \
                 --tls=false 2>&1 || echo "Org2 approval may already exist"
@@ -197,9 +218,9 @@ spec:
               export CORE_PEER_MSPCONFIGPATH=/org1-admin-msp
               peer lifecycle chaincode checkcommitreadiness \
                 --channelID mychannel \
-                --name bank-transfer \
-                --version 1.0 \
-                --sequence 4 \
+                --name "$CHAINCODE_NAME" \
+                --version "$CHAINCODE_VERSION" \
+                --sequence "$CHAINCODE_SEQUENCE" \
                 --tls=false \
                 --output json 2>&1 || echo "Sequence may already be committed, continuing..."
 
@@ -207,9 +228,9 @@ spec:
               echo "==> Committing chaincode definition..."
               peer lifecycle chaincode commit \
                 --channelID mychannel \
-                --name bank-transfer \
-                --version 1.0 \
-                --sequence 4 \
+                --name "$CHAINCODE_NAME" \
+                --version "$CHAINCODE_VERSION" \
+                --sequence "$CHAINCODE_SEQUENCE" \
                 --peerAddresses peer0-org1.fabric.svc.cluster.local:7051 \
                 --peerAddresses peer0-org2.fabric.svc.cluster.local:7051 \
                 -o orderer.fabric.svc.cluster.local:7050 \
@@ -225,7 +246,7 @@ spec:
               peer chaincode invoke \
                 -o orderer.fabric.svc.cluster.local:7050 \
                 -C mychannel \
-                -n bank-transfer \
+                -n "$CHAINCODE_NAME" \
                 --peerAddresses peer0-org1.fabric.svc.cluster.local:7051 \
                 --peerAddresses peer0-org2.fabric.svc.cluster.local:7051 \
                 --tls=false \
@@ -237,7 +258,7 @@ spec:
               sleep 3
               peer chaincode query \
                 -C mychannel \
-                -n bank-transfer \
+                -n "$CHAINCODE_NAME" \
                 -c '{"function":"QueryBalance","Args":["ACC-B1-001"]}' 2>&1
           volumeMounts:
             - name: org1-admin-msp

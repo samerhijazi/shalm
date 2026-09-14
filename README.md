@@ -120,6 +120,10 @@ mvn quarkus:dev
 # Run tests (also runs automatically in CI before every image build)
 cd 03_apps/quarkus-api && mvn test
 cd 03_apps/quarkus-ui && mvn test
+cd 04_blockchain/fabric/chaincode && mvn test
+
+# Verify Fabric, the API, and the rendered Blockchain tab after deployment
+./01_infrastructure/scripts/verify-fabric.sh
 
 # Check cluster state
 kubectl get pods -A
@@ -128,6 +132,22 @@ kubectl get applications -n argocd
 # SSH into master node
 limactl shell k8s-master
 ```
+
+## Releasing Fabric Chaincode
+
+`04_blockchain/fabric/chaincode/release.env` is the source for the lifecycle
+name, version, sequence, label, and CCAAS address. For a behavior-changing
+chaincode release, increment the version and sequence, then render and validate
+the canonical Fabric package ID:
+
+```bash
+04_blockchain/fabric/chaincode/update-release-config.sh
+04_blockchain/fabric/chaincode/validate-release.sh
+```
+
+The chaincode workflow runs unit tests and a disposable two-organization Fabric
+network before publishing an image. Argo CD then runs the lifecycle setup as a
+Sync hook and verifies the API plus Blockchain UI as a PostSync hook.
 
 ---
 

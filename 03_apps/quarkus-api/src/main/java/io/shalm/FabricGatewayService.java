@@ -14,13 +14,12 @@ import org.hyperledger.fabric.client.identity.Signers;
 import org.hyperledger.fabric.client.identity.X509Identity;
 import org.jboss.logging.Logger;
 
-import java.io.IOException;
 import java.io.Reader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
-import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 @ApplicationScoped
@@ -45,6 +44,9 @@ public class FabricGatewayService {
 
     @ConfigProperty(name = "fabric.chaincode", defaultValue = "bank-transfer")
     String chaincodeName;
+
+    @ConfigProperty(name = "fabric.health.account", defaultValue = "ACC-B1-001")
+    String healthAccount;
 
     @ConfigProperty(name = "fabric.cert.path", defaultValue = "/fabric-crypto/admin-cert.pem")
     String certPath;
@@ -102,9 +104,20 @@ public class FabricGatewayService {
         return available;
     }
 
+    public boolean isEnabled() {
+        return enabled;
+    }
+
     public int queryBalance(String accountId) throws Exception {
         byte[] result = contract.evaluateTransaction("QueryBalance", accountId);
-        return Integer.parseInt(new String(result).trim());
+        return Integer.parseInt(new String(result, StandardCharsets.UTF_8).trim());
+    }
+
+    public int checkHealth() throws Exception {
+        if (!available) {
+            throw new IllegalStateException("Fabric Gateway is not connected");
+        }
+        return queryBalance(healthAccount);
     }
 
     public void transfer(String fromId, String toId, int amount) throws Exception {

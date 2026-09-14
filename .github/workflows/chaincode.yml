@@ -1,24 +1,120 @@
-name: Build & Push Fabric Chaincode
+name: Fabric Chaincode CI
 
 on:
+  pull_request:
+    paths:
+      - "04_blockchain/fabric/chaincode/**"
+      - "02_gitops/fabric/chaincode-config.yaml"
+      - "02_gitops/fabric/setup-job.yaml"
+      - "02_gitops/fabric/smoke-test-job.yaml"
+      - ".github/workflows/chaincode.yml"
   push:
     branches: [main]
     paths:
       - "04_blockchain/fabric/chaincode/**"
+      - "02_gitops/fabric/chaincode-config.yaml"
+      - "02_gitops/fabric/setup-job.yaml"
+      - "02_gitops/fabric/smoke-test-job.yaml"
       - ".github/workflows/chaincode.yml"
+  workflow_dispatch:
+
+env:
+  FABRIC_TEST_VERSION: 2.5.16
+  FABRIC_SAMPLES_COMMIT: 119d3bc
+  IMAGE: ghcr.io/samerhijazi/shalm-chaincode
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
-  build-push:
+  verify:
+    name: Unit and release checks
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      packages: write
-
     steps:
       - uses: actions/checkout@v4.2.2
 
       - name: Load versions
-        run: grep -v '^#' versions.env | grep -v '^$' >> $GITHUB_ENV
+        run: grep -v '^#' versions.env | grep -v '^$' >> "$GITHUB_ENV"
+
+      - uses: actions/setup-java@v4.7.0
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: temurin
+          cache: maven
+
+      - name: Run chaincode unit tests
+        run: mvn --batch-mode test
+        working-directory: 04_blockchain/fabric/chaincode
+
+      - name: Validate lifecycle metadata and package ID
+        run: 04_blockchain/fabric/chaincode/validate-release.sh
+
+  integration:
+    name: Fabric CCAAS integration
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4.2.2
+
+      - name: Install pinned Fabric test network
+        working-directory: /tmp
+        run: |
+          git clone --filter=blob:none https://github.com/hyperledger/fabric-samples.git
+          git -C fabric-samples checkout "$FABRIC_SAMPLES_COMMIT"
+          curl --fail --location --retry 5 --silent --show-error \
+            --output install-fabric.sh \
+            "https://raw.githubusercontent.com/hyperledger/fabric/v${FABRIC_TEST_VERSION}/scripts/install-fabric.sh"
+          chmod +x install-fabric.sh
+          ./install-fabric.sh --fabric-version "$FABRIC_TEST_VERSION" binary docker
+
+      - name: Deploy and exercise Java CCAAS chaincode
+        working-directory: /tmp/fabric-samples/test-network
+        run: |
+          set -euo pipefail
+          trap './network.sh down' EXIT
+          source "$GITHUB_WORKSPACE/04_blockchain/fabric/chaincode/release.env"
+
+          ./network.sh up createChannel
+          ./network.sh deployCCAAS \
+            -ccn "$CHAINCODE_NAME" \
+            -ccp "$GITHUB_WORKSPACE/04_blockchain/fabric/chaincode"
+
+          export CORE_PEER_TLS_ENABLED=true
+          export CORE_PEER_LOCALMSPID=Org1MSP
+          export CORE_PEER_TLS_ROOTCERT_FILE="$PWD/organizations/peerOrganizations/org1.example.com/tlsca/tlsca.org1.example.com-cert.pem"
+          export CORE_PEER_MSPCONFIGPATH="$PWD/organizations/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp"
+          export CORE_PEER_ADDRESS=localhost:7051
+          export PATH="$PWD/../bin:$PATH"
+          export FABRIC_CFG_PATH="$PWD/../config"
+
+          peer chaincode invoke \
+            -o localhost:7050 \
+            --ordererTLSHostnameOverride orderer.example.com \
+            --tls \
+            --cafile "$PWD/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem" \
+            -C mychannel \
+            -n "$CHAINCODE_NAME" \
+            --peerAddresses localhost:7051 \
+            --tlsRootCertFiles "$CORE_PEER_TLS_ROOTCERT_FILE" \
+            -c '{"function":"InitLedger","Args":[]}'
+
+          sleep 3
+          balance="$(peer chaincode query \
+            -C mychannel \
+            -n "$CHAINCODE_NAME" \
+            -c '{"function":"QueryBalance","Args":["ACC-B1-001"]}')"
+          test "$balance" = "1000"
+
+  build-push:
+    name: Publish and update GitOps
+    if: github.event_name != 'pull_request'
+    needs: [verify, integration]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+    steps:
+      - uses: actions/checkout@v4.2.2
+        with:
+          ref: main
 
       - uses: docker/setup-qemu-action@v3.6.0
 
@@ -30,24 +126,24 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build & push chaincode image
+      - name: Build and push chaincode image
         uses: docker/build-push-action@v5.4.0
         with:
           context: 04_blockchain/fabric/chaincode
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
-            ghcr.io/samerhijazi/shalm-chaincode:${{ github.sha }}
-            ghcr.io/samerhijazi/shalm-chaincode:latest
+            ${{ env.IMAGE }}:${{ github.sha }}
+            ${{ env.IMAGE }}:latest
 
       - name: Patch chaincode deployment manifest
         run: |
-          sed -i "s|image: ghcr.io/samerhijazi/shalm-chaincode:.*|image: ghcr.io/samerhijazi/shalm-chaincode:${{ github.sha }}|" \
+          sed -i "s|image: ${{ env.IMAGE }}:.*|image: ${{ env.IMAGE }}:${{ github.sha }}|" \
             02_gitops/fabric/chaincode/deployment.yaml
 
       - name: Commit manifest update
         run: |
-          git config user.name  "github-actions[bot]"
+          git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add 02_gitops/fabric/chaincode/deployment.yaml
           git diff --cached --quiet || git commit -m "ci: update chaincode image to ${{ github.sha }}"

@@ -15,6 +15,8 @@
         <fabric.chaincode.version>2.5.0</fabric.chaincode.version>
         <jackson.version>2.17.1</jackson.version>
         <shade.plugin.version>3.5.1</shade.plugin.version>
+        <junit.version>5.10.2</junit.version>
+        <surefire.plugin.version>3.2.5</surefire.plugin.version>
         <mainClass>io.shalm.fabric.BankChaincodeServer</mainClass>
     </properties>
 
@@ -36,10 +38,21 @@
             <artifactId>jackson-databind</artifactId>
             <version>${jackson.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
         <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>${surefire.plugin.version}</version>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>

@@ -21,6 +21,23 @@ public class FabricResource {
     FabricGatewayService fabric;
 
     @GET
+    @Path("/health")
+    public Response health() {
+        if (!fabric.isAvailable()) {
+            return unavailable();
+        }
+        try {
+            fabric.checkHealth();
+            return Response.ok(Map.of("status", "ok", "ledger", "fabric")).build();
+        } catch (Exception e) {
+            LOG.warnf("Fabric health check failed: %s", e.getMessage());
+            return Response.status(Response.Status.SERVICE_UNAVAILABLE)
+                    .entity(Map.of("status", "down", "error", e.getMessage()))
+                    .build();
+        }
+    }
+
+    @GET
     @Path("/balance/{id}")
     public Response balance(@PathParam("id") String accountId) {
         if (!fabric.isAvailable()) {
@@ -69,7 +86,7 @@ public class FabricResource {
 
     private static Response unavailable() {
         return Response.status(503)
-                .entity(Map.of("error", "Fabric ledger not available — deploy Phase 4 and set FABRIC_ENABLED=true"))
+                .entity(Map.of("error", "Fabric ledger not available", "status", "down"))
                 .build();
     }
 }

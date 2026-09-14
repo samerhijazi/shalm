@@ -836,9 +836,15 @@ sidecar injection so it exits when its work completes. Live verification showed
 `InitLedger` succeeding, all four `/fabric/balance/{id}` calls returning their
 expected values, and every Blockchain UI row reporting `sync`.
 
-Chaincode sequence remains **4**. If packaging metadata or `connection.json`
-changes, update the ID in `chaincode-config.yaml`; the setup Job will fail fast
-and print the newly calculated value if they differ.
+Chaincode sequence remains **4**. Lifecycle metadata now lives in
+`04_blockchain/fabric/chaincode/release.env`. For future behavior-changing
+releases, bump the version and sequence and run `update-release-config.sh`; it
+uses Fabric's canonical `calculatepackageid` command to render
+`chaincode-config.yaml`. CI validates the ID, runs chaincode unit tests, and
+deploys the code to a disposable two-organization Fabric network. Argo CD runs
+the lifecycle setup as a Sync hook and a read-only API/UI smoke test as a
+PostSync hook. The same live checks are available locally through
+`01_infrastructure/scripts/verify-fabric.sh`.
 
 ---
 

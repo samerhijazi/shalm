@@ -1,0 +1,62 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: fabric-smoke-test
+  namespace: fabric
+  annotations:
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
+spec:
+  backoffLimit: 2
+  template:
+    metadata:
+      annotations:
+        sidecar.istio.io/inject: "false"
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: smoke-test
+          image: curlimages/curl:8.12.1
+          command:
+            - sh
+            - -ec
+            - |
+              fetch() {
+                url="$1"
+                output="$2"
+                attempt=1
+                while [ "$attempt" -le 12 ]; do
+                  if curl --fail --silent --show-error \
+                    --connect-timeout 3 --max-time 15 \
+                    --output "$output" "$url"; then
+                    return 0
+                  fi
+                  echo "Attempt $attempt failed for $url; retrying..."
+                  attempt=$((attempt + 1))
+                  sleep 5
+                done
+                return 1
+              }
+
+              api="http://quarkus-api.quarkus-api.svc.cluster.local:8080"
+              ui="http://quarkus-ui.quarkus-ui.svc.cluster.local:8080"
+
+              for account in ACC-B1-001 ACC-B1-002 ACC-B2-001 ACC-B2-002; do
+                fetch "$api/fabric/balance/$account" "/tmp/$account.json"
+                grep -Eq '"balance"[[:space:]]*:[[:space:]]*[0-9]+' "/tmp/$account.json"
+              done
+
+              fetch "$ui/" /tmp/dashboard.html
+              if grep -q 'Fabric ledger not available' /tmp/dashboard.html; then
+                echo "Blockchain tab still reports that the Fabric ledger is unavailable" >&2
+                exit 1
+              fi
+
+              echo "Fabric API and Blockchain UI smoke tests passed."
+          resources:
+            requests:
+              cpu: 20m
+              memory: 32Mi
+            limits:
+              cpu: 100m
+              memory: 64Mi

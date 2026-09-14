@@ -15,6 +15,10 @@ public class BankChaincode extends ChaincodeBase {
 
     private final ObjectMapper mapper = new ObjectMapper();
 
+    BankChaincode() {
+        // Unit tests exercise transaction behavior without starting the CCAAS server.
+    }
+
     public BankChaincode(String[] args) {
         // We construct NettyChaincodeServer manually instead of calling the inherited
         // start(args) (start() always runs in *client* mode -- it dials out to a peer --
