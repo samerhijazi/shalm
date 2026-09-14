@@ -1,10 +1,10 @@
 {
   "app": "quarkus-ui",
-  "tests": 0,
-  "passed": 0,
+  "tests": 6,
+  "passed": 6,
   "failures": 0,
   "errors": 0,
   "skipped": 0,
-  "timestamp": null,
-  "commit": null
+  "timestamp": "2026-09-14T10:24:32Z",
+  "commit": "3325723"
 }
