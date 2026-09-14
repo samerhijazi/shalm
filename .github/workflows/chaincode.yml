@@ -94,6 +94,8 @@ jobs:
             -n "$CHAINCODE_NAME" \
             --peerAddresses localhost:7051 \
             --tlsRootCertFiles "$CORE_PEER_TLS_ROOTCERT_FILE" \
+            --peerAddresses localhost:9051 \
+            --tlsRootCertFiles "$PWD/organizations/peerOrganizations/org2.example.com/tlsca/tlsca.org2.example.com-cert.pem" \
             --waitForEvent \
             --waitForEventTimeout 30s \
             -c '{"function":"InitLedger","Args":[]}'
