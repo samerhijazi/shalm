@@ -91,7 +91,7 @@ The Quarkus UI also serves a standalone `/architecture` page — a static platfo
 | 1 | Observability Stack           | Done      |
 | 2 | Quarkus API                   | Done      |
 | 3 | Quarkus UI                    | Done      |
-| 4 | Hyperledger Fabric            | In progress (see below) |
+| 4 | Hyperledger Fabric            | Done      |
 | 5 | Istio Service Mesh            | Done      |
 | 6 | Hyperledger Besu              | Skipped   |
 | 7 | Identity Service              | Skipped   |
@@ -99,7 +99,7 @@ The Quarkus UI also serves a standalone `/architecture` page — a static platfo
 | 9 | SRE Layer                     | Done      |
 | 10| AI Observability Agent        | Done      |
 
-Phases 6 (Besu) and 7 (Identity) intentionally skipped. Fabric channel + chaincode are committed and healthy, but live invocations are blocked on a suspected Istio/Envoy sidecar issue with Fabric's long-lived event streams — see `00_roadmap_runbook.md`'s "Fabric Live-Transaction Blocker" section for the full writeup and next diagnostic steps. All other phases complete.
+Phases 6 (Besu) and 7 (Identity) intentionally skipped. The Fabric channel, CCAAS chaincode, ledger initialization, and API balance queries are live. See `00_roadmap_runbook.md` for implementation history and operational notes.
 
 ---
 

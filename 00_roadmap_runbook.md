@@ -18,14 +18,14 @@ This file was previously named `03_implementation-status.md`.
   or tools not named below — earlier attempts already found the working
   combination the hard way.
 - **Continuing this repo:** read "Current State" immediately below, then the
-  "Fabric Live-Transaction Blocker" section before touching Fabric.
+  Fabric incident history before changing its packaging or lifecycle setup.
 
 ---
 
 ## Current State (read this first in a continuing session)
 
-- ⚠️ **IN PROGRESS: Fabric live transactions still blocked — see "Fabric
-  Live-Transaction Blocker" below before touching Fabric again.**
+- **All implemented phases are operational.** Fabric ledger initialization and
+  API balance queries were verified live on 2026-09-14.
 - **All phases complete (0–5, 8–10). Phases 6 and 7 skipped.**
 - Phases 6 (Besu) and 7 (Identity Service) are **skipped** — network config
   kept in `04_blockchain/besu/` for reference
@@ -378,7 +378,7 @@ version pins.
 | 1   | Observability Stack                | `[x] done`         | Prometheus, Grafana, Loki+Promtail, dashboards                                                                |
 | 2   | Quarkus API                        | `[x] done`         | REST API, in-memory state, metrics, structured logs, GHCR, GitOps                                             |
 | 3   | Quarkus UI                         | `[x] done`         | Qute templates, balance/tx views, wired to API, GitOps                                                        |
-| 4   | Hyperledger Fabric                 | `[~] in-progress`  | Channel + chaincode committed (seq 4), 9 real bugs fixed — live invoke blocked on suspected Istio streaming timeout, see §7 |
+| 4   | Hyperledger Fabric                 | `[x] done`         | Channel + CCAAS chaincode committed (seq 4), ledger initialized, API queries verified live                       |
 | 5   | Istio                               | `[x] done`         | Sidecar injection, ingress gateway, Fabric traffic routing                                                    |
 | 6   | Hyperledger Besu                    | `[s] skipped`      | Network config kept in `04_blockchain/besu/`; no K8s manifests                                                |
 | 7   | Identity Service                    | `[s] skipped`      | No files generated                                                                                            |
@@ -786,12 +786,12 @@ optional Grafana panel integration.
 
 ---
 
-## 7. Fabric Live-Transaction Blocker (open issue — read before touching Fabric)
+## 7. Fabric Live-Transaction Incident (resolved)
 
 **Session date: 2026-09-13/14.** `FABRIC_ENABLED=true` is live, the channel
 `mychannel` genuinely exists, and the `bank-transfer` chaincode is
 installed/approved/**committed at sequence 4** on both peers — none of
-that had ever actually worked before this session, and 9 distinct real
+that had ever actually worked before this session, and 11 distinct real
 bugs were found and fixed to get there (all merged to `main`, commits
 `b04d549` through `d6481f0` — folded into Phase 4's steps above as items
 2–9, in case this needs to be reproduced from zero):
@@ -822,34 +822,23 @@ bugs were found and fixed to get there (all merged to `main`, commits
    container logs now show zero exceptions and clean registration with
    both peers.
 
-**What's still blocking a live `InitLedger`/query:** every attempt now
-gets further than before (channel/install/approve all succeed) but then
-hits either `upstream request timeout` (Envoy's own error string, not
-Fabric's) on `approveformyorg`, or a genuine multi-minute **hang** (not
-a fast failure) on `checkcommitreadiness` — both are long-lived
-streaming calls (Fabric's "deliver filtered" event listener). This
-looks like Istio/Envoy sidecar behavior with Fabric's long-lived gRPC
-streams, not an application or manifest bug — a different category of
-problem from the 9 above. It was **not** resolved by removing job
-contention (ran with zero competing jobs, same result).
+10. **CCAAS registration ID:** the chaincode pod registered with the label
+    `bank-transfer_1.0`, while peers waited for the full installed package ID.
+    `02_gitops/fabric/chaincode-config.yaml` is now the shared source for the
+    full ID, and the setup Job checks its calculated package hash against it.
+11. **Query response encoding:** `ResponseUtils.newSuccessResponse(String)`
+    writes to Fabric's message field. Gateway evaluate calls read the payload,
+    so `QueryBalance` and `getAccount` now return UTF-8 byte payloads.
 
-**Next diagnostic steps, not yet tried:**
-- Check Istio's proxy config for stream idle-timeout / `maxConnectionAge`
-  settings that may be too aggressive for Fabric's event-listening
-  pattern (`istioctl proxy-config` against a peer pod, or the mesh's
-  `DestinationRule`/`EnvoyFilter` resources if any exist)
-- Disable Istio sidecar injection on the `fabric` namespace as a
-  diagnostic, matching the precedent already set for `quarkus-ui` in
-  commit `706828d` for a similar-smelling issue
-- To resume: `kubectl delete job fabric-setup -n fabric` and reapply
-  `02_gitops/fabric/setup-job.yaml` (ArgoCD auto-recreates it anyway);
-  watch logs via the Loki-via-Grafana technique in rule 5.10c. Do NOT run
-  a second manual copy of this job concurrently with the auto-recreated
-  one — they contend for the same peer/orderer connections.
-- Chaincode sequence is now at **4** (committed). If you need to bump it
-  again (e.g. after another code change forces a reinstall), the
-  `--sequence` value is hardcoded in 4 places in `setup-job.yaml` —
-  update all four together.
+The earlier Envoy timeout was a downstream symptom of the peer waiting for a
+chaincode registration whose ID could never match. The setup Job also disables
+sidecar injection so it exits when its work completes. Live verification showed
+`InitLedger` succeeding, all four `/fabric/balance/{id}` calls returning their
+expected values, and every Blockchain UI row reporting `sync`.
+
+Chaincode sequence remains **4**. If packaging metadata or `connection.json`
+changes, update the ID in `chaincode-config.yaml`; the setup Job will fail fast
+and print the newly calculated value if they differ.
 
 ---
 
