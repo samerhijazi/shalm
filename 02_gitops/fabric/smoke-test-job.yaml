@@ -47,8 +47,8 @@ spec:
               done
 
               fetch "$ui/" /tmp/dashboard.html
-              if grep -q 'Fabric ledger not available' /tmp/dashboard.html; then
-                echo "Blockchain tab still reports that the Fabric ledger is unavailable" >&2
+              if grep -q 'Blockchain data is unavailable' /tmp/dashboard.html; then
+                echo "Ledger > Blockchain tab still reports that Fabric block data is unavailable" >&2
                 exit 1
               fi
 
