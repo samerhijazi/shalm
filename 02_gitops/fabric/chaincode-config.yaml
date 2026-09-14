@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fabric-chaincode-config
+  namespace: fabric
+data:
+  # Full ID of the deterministic CCAAS package built in setup-job.yaml.
+  chaincode-id: bank-transfer_1.0:29740da7b74a81a2c524e588b831603754613814e5fd2775ac9f303572287bab

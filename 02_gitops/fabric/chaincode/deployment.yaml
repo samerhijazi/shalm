@@ -22,7 +22,10 @@ spec:
             - name: CHAINCODE_SERVER_PORT
               value: "9999"
             - name: CORE_CHAINCODE_ID_NAME
-              value: bank-transfer_1.0
+              valueFrom:
+                configMapKeyRef:
+                  name: fabric-chaincode-config
+                  key: chaincode-id
           readinessProbe:
             tcpSocket:
               port: 9999

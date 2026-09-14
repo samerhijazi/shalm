@@ -60,6 +60,12 @@ spec:
       containers:
         - name: setup
           image: hyperledger/fabric-tools:2.5
+          env:
+            - name: EXPECTED_CHAINCODE_ID
+              valueFrom:
+                configMapKeyRef:
+                  name: fabric-chaincode-config
+                  key: chaincode-id
           command:
             - bash
             - -c
@@ -139,6 +145,12 @@ spec:
               # $PACKAGE_ID a multi-line garbage string matching nothing real.
               PACKAGE_ID="bank-transfer_1.0:$(sha256sum /tmp/bank-transfer.tar.gz | awk '{print $1}')"
               echo "Package ID: $PACKAGE_ID"
+              if [ "$PACKAGE_ID" != "$EXPECTED_CHAINCODE_ID" ]; then
+                echo "Package ID mismatch: update fabric-chaincode-config before deploying"
+                echo "Expected: $EXPECTED_CHAINCODE_ID"
+                echo "Actual:   $PACKAGE_ID"
+                exit 1
+              fi
 
               # ── install on peer0-org2 ─────────────────────────────────────────
               echo "==> Installing chaincode on peer0-org2..."
