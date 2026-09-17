@@ -26,9 +26,19 @@ This file was previously named `03_implementation-status.md`.
 
 - **All implemented phases are operational.** Fabric ledger initialization and
   API balance queries were verified live on 2026-09-14.
-- **All phases complete (0–5, 8–10). Phases 6 and 7 skipped.**
+- **All phases complete (0–4, 8–10). Phase 5 (Istio) reverted 2026-09-17.
+  Phases 6 and 7 skipped.**
 - Phases 6 (Besu) and 7 (Identity Service) are **skipped** — network config
   kept in `04_blockchain/besu/` for reference
+- **Istio removed (2026-09-17):** `quarkus-api` was down for ~2.5 days —
+  Istio's mesh-wide auto-mTLS made its sidecar originate mTLS to `peer0-org1`
+  and fail to load its own workload cert, taking the readiness probe (and
+  therefore the Service's only endpoints) down with it. This is the same
+  class of problem the Phase 5 caveat already flagged for `quarkus-ui`. With
+  only 2-3 services in this demo, the mesh's operational overhead wasn't
+  worth it — Istio, Kiali (pure mesh-topology viewer, useless without Istio),
+  and Jaeger (its only trace source was the Envoy sidecar; no app has its own
+  OpenTelemetry instrumentation) were all removed. See Phase 5 below.
 - All nodes are **arm64** — every custom Docker image must be built multi-arch
 - `kubectl logs` does NOT work on this cluster (kubelet port unreachable) —
   use debug pods instead (rule 7)
@@ -58,8 +68,6 @@ This file was previously named `03_implementation-status.md`.
 | Grafana             | http://192.168.105.3:30300       | admin / `shalm-admin`       |
 | Prometheus          | http://192.168.105.3:30090       | —                           |
 | Alertmanager        | http://192.168.105.3:30093       | —                           |
-| Jaeger              | http://192.168.105.3:30686       | —                           |
-| Kiali               | http://192.168.105.3:30088       | —                           |
 | ArgoCD              | http://192.168.105.3:30080       | admin / `GhPtA0-v7iFqnPkX`  |
 | Kubernetes Dashboard | https://192.168.105.3:30092 (HTTPS) / :30091 | see `02_gitops/root-app/dashboard-rbac-app.yaml` for the service-account token setup — this component exists in GitOps (`02_gitops/root-app/dashboard-app.yaml`, upstream `kubernetes-dashboard` Helm chart) but was never wired into the phase table below; treat as bonus/unverified rather than a load-bearing platform service |
 
@@ -106,10 +114,6 @@ quarkus-ui (Qute, port 30801)
 Observability: Prometheus + Grafana + Loki + Promtail (namespace: observability)
                Alertmanager (routing + inhibit rules, null receiver by default)
                PrometheusRules: latency, error rate, pod health, Fabric health
-               Jaeger all-in-one (port 30686) — traces via Envoy/Zipkin protocol
-               Kiali (port 30088) — service mesh topology, traffic graph, Jaeger+Grafana integration
-Service mesh:  Istio (namespace: istio-system) — sidecar on fabric namespace
-               Envoy emits traces to Jaeger:9411 (Zipkin); 100% sampling rate
 AI agent:      FastAPI (namespace: ai, port 30810) — GET /summary (Loki), GET /anomalies (Prometheus)
 ```
 
@@ -170,14 +174,13 @@ shalm-platform/
 ├── 02_gitops/
 │   ├── root-app/                 # ArgoCD app-of-apps — one *-app.yaml per child Application
 │   │                              #   (observability split into several: kube-prometheus-stack,
-│   │                              #    loki, promtail, jaeger, kiali, observability-alerts,
+│   │                              #    loki, promtail, observability-alerts,
 │   │                              #    observability-dashboards, dashboard, dashboard-rbac)
 │   ├── observability/            # Prometheus/Grafana/Loki manifests + alerts/
 │   ├── quarkus-app/               # quarkus-api Deployment/Service manifests
 │   ├── quarkus-ui/                # quarkus-ui Deployment/Service manifests
 │   ├── fabric/                    # peer/orderer/setup-job manifests
 │   ├── besu/                      # not created — phase skipped
-│   ├── istio/                     # istiod-app, ingressgateway-app, gateway, virtualservice, peerauthentication, telemetry
 │   └── ai/                        # AI agent Deployment/Service manifests
 │
 ├── 03_apps/
@@ -387,7 +390,7 @@ version pins.
 | 2   | Quarkus API                        | `[x] done`         | REST API, in-memory state, metrics, structured logs, GHCR, GitOps                                             |
 | 3   | Quarkus UI                         | `[x] done`         | Qute templates, balance/tx views, wired to API, GitOps                                                        |
 | 4   | Hyperledger Fabric                 | `[x] done`         | Channel + CCAAS chaincode committed (seq 4), ledger initialized, API queries verified live                       |
-| 5   | Istio                               | `[x] done`         | Sidecar injection, ingress gateway, Fabric traffic routing                                                    |
+| 5   | Istio                               | `[r] reverted`     | Removed 2026-09-17 — auto-mTLS sidecar cert failures repeatedly broke `quarkus-api`; not worth the overhead for a 2-3 service demo. Kiali/Jaeger removed with it (see §Current State) |
 | 6   | Hyperledger Besu                    | `[s] skipped`      | Network config kept in `04_blockchain/besu/`; no K8s manifests                                                |
 | 7   | Identity Service                    | `[s] skipped`      | No files generated                                                                                            |
 | 8   | CI/CD                                | `[x] done`         | Workflows: quarkus-api, quarkus-ui, chaincode — multi-arch, manifest patch, ArgoCD sync                       |
@@ -684,6 +687,34 @@ was removed from `quarkus-ui`'s namespace (see commit `706828d`) after it
 caused issues there — if a similar symptom appears elsewhere, that's
 precedent for disabling injection on that namespace rather than debugging
 the mesh further.
+
+**Reverted (2026-09-17):** the same class of problem the caveat above
+predicted recurred on `quarkus-api` — Istio's mesh-wide auto-mTLS made its
+sidecar originate mTLS to `peer0-org1`, failed to load its own workload cert,
+and took the readiness probe (and the Service's only endpoints) down for
+~2.5 days. Diagnosed via the `fabric-ledger` health check reporting
+`UNAVAILABLE: failed to load client certificate: both Key and Certificate
+are required when using mutual TLS` (found via Loki, see rule 10c) — neither
+Fabric's own TLS (disabled everywhere) nor the app code (plain `.usePlaintext()`
+gRPC channel, no TLS logic at all) can produce that error, so it's Istio's
+sidecar, not Fabric. Given this demo only runs 2-3 services, decided the mesh
+isn't worth debugging a second time. **Removed entirely:** `02_gitops/istio/`,
+`02_gitops/root-app/istio-app.yaml`, plus Kiali (`02_gitops/root-app/kiali-app.yaml`
+— pure mesh-topology viewer, no function without Istio) and Jaeger
+(`02_gitops/root-app/jaeger-app.yaml`, `02_gitops/observability/jaeger/` — its
+only trace source was the Envoy sidecar; no app has its own OpenTelemetry
+instrumentation, so dropping Istio drops tracing either way). Also cleaned
+up: the `istio-injection: enabled` label on `02_gitops/fabric/namespace.yaml`;
+a live-only (never-committed) copy of that label on the `quarkus-api` /
+`quarkus-ui` namespaces left over from `simulate-failures.sh mesh-enable`
+having been run without a matching `mesh-disable`; the mesh/trace-observation
+commands in `simulate-failures.sh` (`latency-inject/remove`, `mesh-enable/
+disable`, `trace-*`); the dead Jaeger Grafana datasource in
+`02_gitops/observability/kube-prometheus-stack-values.yaml`; and the
+Kiali/Jaeger boxes on the quarkus-ui `/architecture` page. If a service mesh
+is ever needed again, this phase's write-up above is still the reference for
+how it was wired the first time — just watch for this same auto-mTLS cert
+failure mode.
 
 ---
 

@@ -32,11 +32,6 @@ quarkus-ui  (Qute templates, port 30801) — 5 tabs: Dashboard, Accounts, Transf
 Observability:  Prometheus · Grafana · Loki · Promtail  (namespace: observability)
                 Alertmanager  (routing + inhibit rules)
                 PrometheusRules: latency, error rate, pod health, Fabric health
-                Jaeger all-in-one  (port 30686) — traces via Envoy/Zipkin
-                Kiali  (port 30088) — service mesh topology + Jaeger/Grafana integration
-
-Service mesh:   Istio  (namespace: istio-system)
-                Envoy sidecars on fabric namespace — 100% trace sampling → Jaeger
 
 AI agent:       FastAPI  (namespace: ai, port 30810)
                 GET /summary  — recent Loki log digest
@@ -60,8 +55,6 @@ CI/CD:          GitHub Actions — multi-arch build (linux/amd64,linux/arm64) �
 | Grafana      | http://192.168.105.3:30300 | admin / `shalm-admin` |
 | Prometheus   | http://192.168.105.3:30090 | —                     |
 | Alertmanager | http://192.168.105.3:30093 | —                     |
-| Jaeger       | http://192.168.105.3:30686 | —                     |
-| Kiali        | http://192.168.105.3:30088 | —                     |
 | ArgoCD       | http://192.168.105.3:30080 | admin / `GhPtA0-v7iFqnPkX` |
 
 The Quarkus UI also serves a standalone `/architecture` page — a static platform diagram plus this same service table — linked from the dashboard header.
@@ -75,8 +68,7 @@ The Quarkus UI also serves a standalone `/architecture` page — a static platfo
 | Backend       | Quarkus 3.9.5 · Jakarta REST 3.0 · Micrometer       |
 | Frontend      | Quarkus Qute templates · MicroProfile REST Client   |
 | Blockchain    | Hyperledger Fabric 2.5 · Java chaincode (CCAAS)     |
-| Service Mesh  | Istio · Envoy · Kiali                               |
-| Observability | Prometheus · Grafana · Loki · Promtail · Jaeger      |
+| Observability | Prometheus · Grafana · Loki · Promtail              |
 | AI Agent      | Python 3.12 · FastAPI                               |
 | GitOps        | ArgoCD (App-of-Apps pattern)                        |
 | CI/CD         | GitHub Actions · GHCR · multi-arch (amd64 + arm64) |
@@ -94,14 +86,14 @@ The Quarkus UI also serves a standalone `/architecture` page — a static platfo
 | 2 | Quarkus API                   | Done      |
 | 3 | Quarkus UI                    | Done      |
 | 4 | Hyperledger Fabric            | Done      |
-| 5 | Istio Service Mesh            | Done      |
+| 5 | Istio Service Mesh            | Reverted  |
 | 6 | Hyperledger Besu              | Skipped   |
 | 7 | Identity Service              | Skipped   |
 | 8 | CI/CD                         | Done      |
 | 9 | SRE Layer                     | Done      |
 | 10| AI Observability Agent        | Done      |
 
-Phases 6 (Besu) and 7 (Identity) intentionally skipped. The Fabric channel, CCAAS chaincode, ledger initialization, and API balance queries are live. See `00_roadmap_runbook.md` for implementation history and operational notes.
+Phases 6 (Besu) and 7 (Identity) intentionally skipped. Phase 5 (Istio) was reverted 2026-09-17 — recurring mesh auto-mTLS sidecar cert failures repeatedly took `quarkus-api` down, and with only 2-3 services the mesh wasn't worth the overhead; Kiali and Jaeger were removed alongside it. The Fabric channel, CCAAS chaincode, ledger initialization, and API balance queries are live. See `00_roadmap_runbook.md` for implementation history and operational notes.
 
 ---
 
@@ -164,7 +156,6 @@ shalm-platform/
 │   ├── quarkus-app/      # quarkus-api manifests
 │   ├── quarkus-ui/       # quarkus-ui manifests
 │   ├── fabric/           # Fabric peer/orderer manifests
-│   ├── istio/            # Istio install + routing
 │   └── ai/               # AI agent manifests
 ├── 03_apps/
 │   ├── quarkus-api/      # Quarkus backend (REST + Fabric gateway)

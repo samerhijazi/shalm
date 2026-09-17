@@ -111,7 +111,7 @@
         <div class="diagram-wrap">
             <svg viewBox="0 0 1000 560" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="arch-title arch-desc">
                 <title id="arch-title">Shalm platform architecture diagram</title>
-                <desc id="arch-desc">A developer pushes code to the GitHub Repo. CI builds an image, pushes it to GHCR, and commits a manifest patch back to the repo. ArgoCD, running inside the Kubernetes cluster, watches the repo and applies the updated manifests; separately, each node's kubelet pulls the actual image from GHCR when scheduling pods. The cluster runs the Quarkus UI, Quarkus API, Hyperledger Fabric network, and an observability stack of Prometheus, Grafana, Alertmanager, Loki, Jaeger and Kiali. Fabric's Envoy sidecar emits traces to Jaeger.</desc>
+                <desc id="arch-desc">A developer pushes code to the GitHub Repo. CI builds an image, pushes it to GHCR, and commits a manifest patch back to the repo. ArgoCD, running inside the Kubernetes cluster, watches the repo and applies the updated manifests; separately, each node's kubelet pulls the actual image from GHCR when scheduling pods. The cluster runs the Quarkus UI, Quarkus API, Hyperledger Fabric network, and an observability stack of Prometheus, Grafana, Alertmanager and Loki.</desc>
 
                 <defs>
                     <marker id="arrow-slate" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
@@ -208,25 +208,13 @@
                 <text x="592" y="422" text-anchor="middle" class="box-title" fill="#9a3412">Alertmanager</text>
                 <text x="592" y="438" text-anchor="middle" class="box-sub" fill="#9a3412">:30093</text>
 
-                <rect x="682" y="398" width="115" height="55" rx="8" fill="#fff7ed" stroke="#fdba74" stroke-width="1.5"></rect>
-                <text x="740" y="422" text-anchor="middle" class="box-title" fill="#9a3412">Jaeger</text>
-                <text x="740" y="438" text-anchor="middle" class="box-sub" fill="#9a3412">:30686</text>
-
-                <rect x="815" y="398" width="100" height="55" rx="8" fill="#fff7ed" stroke="#fdba74" stroke-width="1.5"></rect>
-                <text x="865" y="422" text-anchor="middle" class="box-title" fill="#9a3412">Kiali</text>
-                <text x="865" y="438" text-anchor="middle" class="box-sub" fill="#9a3412">:30088</text>
-
                 <line x1="215" y1="425" x2="229" y2="425" stroke="#9a3412" stroke-width="1.75" marker-end="url(#arrow-amber)"></line>
                 <line x1="366" y1="425" x2="352" y2="425" stroke="#9a3412" stroke-width="1.75" marker-end="url(#arrow-amber)"></line>
                 <line x1="501" y1="425" x2="515" y2="425" stroke="#9a3412" stroke-width="1.75" marker-end="url(#arrow-amber)"></line>
-                <line x1="797" y1="425" x2="811" y2="425" stroke="#9a3412" stroke-width="1.75" marker-end="url(#arrow-amber)"></line>
 
-                <!-- ── Dotted metrics arrow from Quarkus API; traces from Fabric's Envoy sidecar ── -->
+                <!-- ── Dotted metrics arrow from Quarkus API ── -->
                 <line x1="505" y1="293" x2="434" y2="392" stroke="#9a3412" stroke-width="1.5" stroke-dasharray="2,4" marker-end="url(#arrow-amber)"></line>
                 <text x="470" y="343" text-anchor="middle" class="edge-label" fill="#9a3412">metrics scrape</text>
-
-                <line x1="825" y1="293" x2="740" y2="392" stroke="#9a3412" stroke-width="1.5" stroke-dasharray="2,4" marker-end="url(#arrow-amber)"></line>
-                <text x="783" y="343" text-anchor="middle" class="edge-label" fill="#9a3412">Envoy sidecar traces</text>
 
                 <!-- ── Legend ── -->
                 <line x1="70" y1="522" x2="104" y2="522" stroke="var(--muted)" stroke-width="1.75"></line>
@@ -239,7 +227,7 @@
                 <text x="532" y="526" class="edge-label" fill="var(--muted)">dashed grey = image pull</text>
 
                 <line x1="725" y1="522" x2="759" y2="522" stroke="#9a3412" stroke-width="1.5" stroke-dasharray="2,4"></line>
-                <text x="767" y="526" class="edge-label" fill="var(--muted)">dotted amber = metrics/traces</text>
+                <text x="767" y="526" class="edge-label" fill="var(--muted)">dotted amber = metrics</text>
             </svg>
         </div>
     </div>
@@ -279,16 +267,6 @@
                     <tr>
                         <td>Alertmanager</td>
                         <td><a href="http://192.168.105.3:30093">http://192.168.105.3:30093</a></td>
-                        <td class="cred">&mdash;</td>
-                    </tr>
-                    <tr>
-                        <td>Jaeger</td>
-                        <td><a href="http://192.168.105.3:30686">http://192.168.105.3:30686</a></td>
-                        <td class="cred">&mdash;</td>
-                    </tr>
-                    <tr>
-                        <td>Kiali</td>
-                        <td><a href="http://192.168.105.3:30088">http://192.168.105.3:30088</a></td>
                         <td class="cred">&mdash;</td>
                     </tr>
                     <tr>

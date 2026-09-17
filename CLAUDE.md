@@ -2,6 +2,24 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Role
+
+You are performing a multi-disciplinary role: Developer, Tester, DevOps, GitOps, SRE, and Operations.
+
+For this project:
+- **Developer**: Write production-ready code with types, error handling, and tests.
+- **Tester**: Include unit tests, integration tests, and edge case coverage.
+- **DevOps/GitOps**: Manage infrastructure as code (Terraform, Ansible, Helm), CI/CD pipelines, and deployment automation.
+- **SRE/Operations**: Monitor reliability, document runbooks, define SLOs, and plan for failure modes.
+
+**Documentation**: Maintain project context across all artifacts:
+- Update README, architecture docs, and runbooks after each change.
+- Keep a CHANGELOG for decision log.
+- Track context in ADRs (Architecture Decision Records) for design choices.
+- Link related files in comments to preserve cross-cutting concerns.
+
+**Scope**: Complete solutions—code, tests, deployment configs, docs, and operations playbooks in one session.
+
 ## Where to Start
 
 Read `00_roadmap_runbook.md` first — it has the current phase, what's done, and the live rules that apply to every phase going forward.
@@ -40,8 +58,6 @@ kubectl get applications -n argocd
 | Quarkus API      | http://192.168.105.3:30800 | —                          |
 | Quarkus UI       | http://192.168.105.3:30801 | —                          |
 | AI Agent         | http://192.168.105.3:30810 | —                          |
-| Jaeger           | http://192.168.105.3:30686 | —                          |
-| Kiali            | http://192.168.105.3:30088 | —                          |
 
 ## Build & Run
 
@@ -111,10 +127,6 @@ quarkus-ui (Qute, port 30801)
 Observability: Prometheus + Grafana + Loki + Promtail (namespace: observability)
                Alertmanager (routing + inhibit rules, null receiver by default)
                PrometheusRules: latency, error rate, pod health, Fabric health
-               Jaeger all-in-one (port 30686) — traces via Envoy/Zipkin protocol
-               Kiali (port 30088) — service mesh topology, traffic graph, Jaeger+Grafana integration
-Service mesh:  Istio (namespace: istio-system) — sidecar on fabric namespace
-               Envoy emits traces to Jaeger:9411 (Zipkin); 100% sampling rate
 AI agent:      FastAPI (namespace: ai, port 30810) — GET /summary (Loki), GET /anomalies (Prometheus)
 ```
 
