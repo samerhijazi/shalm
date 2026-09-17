@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
-"""Summarize Maven Surefire XML reports into a small JSON file consumed by
-the quarkus-ui "Tests" dashboard tab. Usage:
+"""Summarize Maven Surefire XML reports into a small JSON history file
+consumed by the quarkus-ui "Tests" dashboard tab. The output is a JSON array
+of up to the 10 most recent runs, newest first — each CI run prepends its own
+summary to whatever history is already committed at <output-json-path> and
+truncates to 10. Usage:
   generate-test-summary.py <app-name> <surefire-reports-dir> <output-json-path>
 """
 import glob
@@ -9,6 +12,23 @@ import os
 import sys
 import xml.etree.ElementTree as ET
 from datetime import datetime, timezone
+
+MAX_HISTORY = 10
+
+
+def load_history(path: str) -> list:
+    if not os.path.exists(path):
+        return []
+    try:
+        with open(path) as fh:
+            data = json.load(fh)
+    except (OSError, json.JSONDecodeError):
+        return []
+    if isinstance(data, list):
+        return data
+    if isinstance(data, dict):
+        return [data]
+    return []
 
 
 def main() -> None:
@@ -33,10 +53,14 @@ def main() -> None:
         "commit": os.environ.get("GITHUB_SHA", "")[:7] or None,
     }
 
-    with open(out_path, "w") as fh:
-        json.dump(summary, fh, indent=2)
+    history = load_history(out_path)
+    history.insert(0, summary)
+    history = history[:MAX_HISTORY]
 
-    print(f"Wrote {out_path}: {summary}")
+    with open(out_path, "w") as fh:
+        json.dump(history, fh, indent=2)
+
+    print(f"Wrote {out_path} ({len(history)} run(s)): {summary}")
 
 
 if __name__ == "__main__":

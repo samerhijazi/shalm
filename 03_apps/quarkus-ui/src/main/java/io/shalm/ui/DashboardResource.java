@@ -1,5 +1,6 @@
 package io.shalm.ui;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.qute.Template;
 import io.quarkus.qute.TemplateInstance;
@@ -249,20 +250,20 @@ public class DashboardResource {
         }
     }
 
-    private TestSummary loadApiTestResults() {
+    private List<TestSummary> loadApiTestResults() {
         try {
             return apiClient.getApiTestResults();
         } catch (Exception e) {
-            return null;
+            return List.of();
         }
     }
 
-    private TestSummary loadUiTestResults() {
+    private List<TestSummary> loadUiTestResults() {
         try (InputStream in = getClass().getResourceAsStream("/test-results.json")) {
-            if (in == null) return null;
-            return objectMapper.readValue(in, TestSummary.class);
+            if (in == null) return List.of();
+            return objectMapper.readValue(in, new TypeReference<List<TestSummary>>() {});
         } catch (IOException e) {
-            return null;
+            return List.of();
         }
     }
 

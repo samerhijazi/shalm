@@ -122,7 +122,7 @@ class DashboardResourceTest {
         summary.passed = 10;
         summary.timestamp = "2026-09-13T22:00:00Z";
         summary.commit = "abc1234";
-        when(apiClient.getApiTestResults()).thenReturn(summary);
+        when(apiClient.getApiTestResults()).thenReturn(java.util.List.of(summary));
 
         given()
           .when().get("/")

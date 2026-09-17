@@ -6,6 +6,7 @@ on:
     paths:
       - "03_apps/quarkus-api/**"
       - ".github/workflows/quarkus-api.yml"
+      - ".github/scripts/**"
       - "versions.env"
   workflow_dispatch:
 

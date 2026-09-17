@@ -36,7 +36,7 @@ public interface ApiClient {
     @GET
     @Path("/tests")
     @Produces(MediaType.APPLICATION_JSON)
-    TestSummary getApiTestResults();
+    List<TestSummary> getApiTestResults();
 
     @GET
     @Path("/fabric/blocks")
