@@ -6,6 +6,16 @@
     "failures": 0,
     "errors": 0,
     "skipped": 0,
+    "timestamp": "2026-09-17T09:33:35Z",
+    "commit": "d721e6d"
+  },
+  {
+    "app": "quarkus-api",
+    "tests": 31,
+    "passed": 31,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
     "timestamp": "2026-09-14T18:13:18Z",
     "commit": "93f6c1d"
   }
