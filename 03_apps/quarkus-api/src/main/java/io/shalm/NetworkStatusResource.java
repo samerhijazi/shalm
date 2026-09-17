@@ -5,6 +5,7 @@ import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
 import java.time.Instant;
@@ -26,6 +27,15 @@ public class NetworkStatusResource {
     @Inject
     FabricLedgerService ledger;
 
+    @Inject
+    OrdererHealthService ordererHealth;
+
+    @ConfigProperty(name = "fabric.orderer.host")
+    String ordererHost;
+
+    @ConfigProperty(name = "fabric.orderer.port")
+    int ordererPort;
+
     @GET
     public NetworkStatus get() {
         boolean available = fabric.isAvailable();
@@ -41,6 +51,8 @@ public class NetworkStatusResource {
             }
         }
 
+        boolean ordererAvailable = fabric.isEnabled() && ordererHealth.isHealthy();
+
         return new NetworkStatus(
                 fabric.getChannelName(),
                 fabric.getChaincodeName(),
@@ -48,6 +60,9 @@ public class NetworkStatusResource {
                 fabric.getMspId(),
                 fabric.getPeerHost(),
                 fabric.getPeerPort(),
+                ordererHost,
+                ordererPort,
+                ordererAvailable,
                 fabric.isEnabled(),
                 available,
                 latestBlock,

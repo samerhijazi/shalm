@@ -39,6 +39,14 @@ This file was previously named `03_implementation-status.md`.
   worth it — Istio, Kiali (pure mesh-topology viewer, useless without Istio),
   and Jaeger (its only trace source was the Envoy sidecar; no app has its own
   OpenTelemetry instrumentation) were all removed. See Phase 5 below.
+- **Real orderer health check (2026-09-17):** Operations → Network's
+  "Orderer" field was hardcoded to "Unknown". Fabric's orderer gRPC port
+  (7050) only serves `AtomicBroadcast`/`Cluster` — no generic health RPC —
+  so the fix exposes the orderer's separate Operations HTTP service
+  (`ORDERER_OPERATIONS_LISTENADDRESS=0.0.0.0:8443` → `GET /healthz`) and
+  `OrdererHealthService` polls it with a plain `java.net.http.HttpClient`
+  (no new dependency). Peer0 Org2/State DB are still honestly "Unknown" for
+  the same single-identity reason as before.
 - All nodes are **arm64** — every custom Docker image must be built multi-arch
 - `kubectl logs` does NOT work on this cluster (kubelet port unreachable) —
   use debug pods instead (rule 7)

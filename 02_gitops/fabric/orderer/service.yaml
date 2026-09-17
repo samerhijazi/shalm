@@ -10,3 +10,6 @@ spec:
     - name: grpc
       port: 7050
       targetPort: 7050
+    - name: operations
+      port: 8443
+      targetPort: 8443

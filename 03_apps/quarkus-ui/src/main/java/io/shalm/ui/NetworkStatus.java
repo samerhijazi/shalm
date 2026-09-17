@@ -7,6 +7,9 @@ public class NetworkStatus {
     public String mspId;
     public String peerHost;
     public int peerPort;
+    public String ordererHost;
+    public int ordererPort;
+    public boolean ordererAvailable;
     public boolean fabricEnabled;
     public boolean fabricAvailable;
     public Long latestBlockNumber;

@@ -33,7 +33,14 @@
                 </div>
                 <div class="network-item">
                     <div class="label">Orderer</div>
-                    <span class="badge badge-invalid">Unknown</span>
+                    <div class="value">{networkStatus.ordererHost ?: 'N/A'}:{networkStatus.ordererPort}</div>
+                    {#if !networkStatus.fabricEnabled}
+                    <span class="badge badge-invalid">Not configured</span>
+                    {#else if networkStatus.ordererAvailable}
+                    <span class="badge badge-success">Healthy</span>
+                    {#else}
+                    <span class="badge badge-failed">Unavailable</span>
+                    {/if}
                 </div>
                 <div class="network-item">
                     <div class="label">Latest Block</div>

@@ -345,9 +345,9 @@
 
         /* ── Network grid ── */
         .network-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; }
-        .network-item { border: 1px solid var(--border); border-radius: 8px; padding: 0.85rem 1rem; }
+        .network-item { border: 1px solid var(--border); border-radius: 8px; padding: 0.85rem 1rem; min-width: 0; }
         .network-item .label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin-bottom: 0.3rem; }
-        .network-item .value { font-size: 0.9rem; font-weight: 600; color: var(--text); }
+        .network-item .value { font-size: 0.9rem; font-weight: 600; color: var(--text); overflow-wrap: anywhere; word-break: break-word; }
 
         /* ── Modal ── */
         .modal-overlay {
