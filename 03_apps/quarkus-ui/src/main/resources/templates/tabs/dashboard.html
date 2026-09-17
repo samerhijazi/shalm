@@ -130,7 +130,13 @@
             </div>
             <div class="network-item">
                 <div class="label">Orderer</div>
-                <span class="badge badge-invalid">Unknown</span>
+                {#if !networkStatus.fabricEnabled}
+                <span class="badge badge-invalid">Not configured</span>
+                {#else if networkStatus.ordererAvailable}
+                <span class="badge badge-success">Healthy</span>
+                {#else}
+                <span class="badge badge-failed">Unavailable</span>
+                {/if}
             </div>
             <div class="network-item">
                 <div class="label">State Database</div>
@@ -141,6 +147,6 @@
                 <span class="badge badge-success">Healthy</span>
             </div>
         </div>
-        <p class="note">Peer0 Org2, Orderer, and State Database health cannot be independently observed today — only one Fabric identity (Org1) is connected. Shown honestly as Unknown rather than assumed healthy.</p>
+        <p class="note">Peer0 Org2 and State Database health cannot be independently observed today — only one Fabric identity (Org1) is connected. Shown honestly as Unknown rather than assumed healthy.</p>
     </div>
 </div>
