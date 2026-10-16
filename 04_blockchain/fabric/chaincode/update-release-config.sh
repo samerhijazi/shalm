@@ -39,5 +39,13 @@ data:
   chaincode-id: "$package_id"
 EOF
 
+# Stamp the ID into the chaincode pod template so a new release rolls the CCAAS pod.
+# Skipped when rendering elsewhere (validate-release.sh renders to a temp file).
+deployment="$REPO_ROOT/02_gitops/fabric/chaincode/deployment.yaml"
+if [ "$output" = "$REPO_ROOT/02_gitops/fabric/chaincode-config.yaml" ]; then
+  sed -i.bak "s|shalm.io/chaincode-id: \".*\"|shalm.io/chaincode-id: \"$package_id\"|" "$deployment"
+  rm -f "$deployment.bak"
+fi
+
 echo "Rendered chaincode release config: $output"
 echo "Package ID: $package_id"

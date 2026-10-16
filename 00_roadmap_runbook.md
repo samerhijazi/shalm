@@ -47,6 +47,11 @@ This file was previously named `03_implementation-status.md`.
   endorses only on the submitting org's own peer. Workaround, not the real
   fix — proper peer mTLS remains open. Trade-off: one bank can endorse an
   inter-bank transfer alone. `FABRIC_CHAINCODE_VERSION` bumped to `1.2`.
+  Rollout lesson: the CCAAS pod kept the old package ID (ConfigMap env is
+  read only at pod start), so `fabric-setup` hung on InitLedger and took the
+  API's Fabric readiness down until `fabric-chaincode` was restarted. Fixed:
+  `update-release-config.sh` now stamps the ID into a pod-template
+  annotation (`shalm.io/chaincode-id`), verified by `validate-release.sh`.
 - **Real orderer health check (2026-09-17):** Operations → Network's
   "Orderer" field was hardcoded to "Unknown". Fabric's orderer gRPC port
   (7050) only serves `AtomicBroadcast`/`Cluster` — no generic health RPC —

@@ -15,4 +15,11 @@ if ! diff -u "$config" "$generated_config"; then
   exit 1
 fi
 
+package_id="$(sed -n 's/^  chaincode-id: "\(.*\)"$/\1/p' "$config")"
+if ! grep -q "shalm.io/chaincode-id: \"$package_id\"" "$REPO_ROOT/02_gitops/fabric/chaincode/deployment.yaml"; then
+  echo "Chaincode deployment annotation shalm.io/chaincode-id does not match $package_id." >&2
+  echo "Run: 04_blockchain/fabric/chaincode/update-release-config.sh" >&2
+  exit 1
+fi
+
 echo "Chaincode release metadata and canonical package ID are valid."

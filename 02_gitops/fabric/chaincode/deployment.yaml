@@ -12,6 +12,12 @@ spec:
     metadata:
       labels:
         app: fabric-chaincode
+      annotations:
+        # Written by 04_blockchain/fabric/chaincode/update-release-config.sh. CORE_CHAINCODE_ID_NAME
+        # is read from the ConfigMap only at pod start, so a new package ID must change the pod
+        # template to roll the pod — otherwise it keeps serving the old ID and fabric-setup's
+        # InitLedger hangs against the newly committed definition.
+        shalm.io/chaincode-id: "bank-transfer_1.2:b5eb1da6327b91321097e20dde777dec319a3ce1a1d054f1a5086afe9638412a"
     spec:
       containers:
         - name: chaincode

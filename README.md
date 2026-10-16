@@ -143,6 +143,10 @@ the canonical Fabric package ID:
 04_blockchain/fabric/chaincode/validate-release.sh
 ```
 
+The render step also stamps the package ID into the chaincode Deployment's
+`shalm.io/chaincode-id` pod annotation, so a new release always rolls the CCAAS
+pod onto the new ID before the lifecycle setup hook runs.
+
 The chaincode workflow runs unit tests and a disposable two-organization Fabric
 network before publishing an image. Argo CD then runs the lifecycle setup as a
 Sync hook and verifies the API plus Blockchain UI as a PostSync hook.
