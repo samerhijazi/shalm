@@ -46,13 +46,18 @@ spec:
                 grep -Eq '"balance"[[:space:]]*:[[:space:]]*[0-9]+' "/tmp/$account.json"
               done
 
+              fetch "$api/fabric/assets" /tmp/assets.json
+              grep -q '"id":"ASSET-001"' /tmp/assets.json
+              grep -q '"ownerMsp":"Org1MSP"\|"ownerMsp":"Org2MSP"' /tmp/assets.json
+              grep -q '"id":"ASSET-002"' /tmp/assets.json
+
               fetch "$ui/" /tmp/dashboard.html
               if grep -q 'Blockchain data is unavailable' /tmp/dashboard.html; then
                 echo "Ledger > Blockchain tab still reports that Fabric block data is unavailable" >&2
                 exit 1
               fi
 
-              echo "Fabric API and Blockchain UI smoke tests passed."
+              echo "Fabric account, ownership asset, and Blockchain UI smoke tests passed."
           resources:
             requests:
               cpu: 20m

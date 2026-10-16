@@ -392,7 +392,7 @@
 
 <header>
     <h1>Shalm</h1>
-    <span class="tagline">Cross-Bank Transfer Platform</span>
+    <span class="tagline">Cross-Organization Asset Platform</span>
     <div class="header-actions">
         <a href="/architecture" class="link-muted">Architecture</a>
         <a href="/" class="btn-sync">&#8635; Sync with API</a>
@@ -413,6 +413,7 @@
         <button class="tab-btn" data-tab="dashboard"  onclick="showTab('dashboard')">Dashboard</button>
         <button class="tab-btn" data-tab="accounts"   onclick="showTab('accounts')">Accounts</button>
         <button class="tab-btn" data-tab="transfer"   onclick="showTab('transfer')">Transfer</button>
+        <button class="tab-btn" data-tab="assets"     onclick="showTab('assets')">Assets</button>
         <button class="tab-btn" data-tab="ledger"     onclick="showTab('ledger')">Ledger</button>
         <button class="tab-btn" data-tab="operations" onclick="showTab('operations')">Operations</button>
     </nav>
@@ -420,6 +421,7 @@
     {#include tabs/dashboard /}
     {#include tabs/accounts /}
     {#include tabs/transfer /}
+    {#include tabs/assets /}
     {#include tabs/ledger /}
     {#include tabs/operations /}
 

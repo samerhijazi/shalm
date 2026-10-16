@@ -84,4 +84,17 @@ class TransferResourceTest {
              .statusCode(400)
              .body("status", equalTo("invalid"));
     }
+
+    @Test
+    void transfer_sameAccountBadRequest() {
+        createAccount(FROM, 100);
+
+        given()
+          .contentType("application/json")
+          .body("{\"from\":\"" + FROM + "\",\"to\":\"" + FROM + "\",\"amount\":10}")
+          .when().post("/transfer")
+          .then()
+             .statusCode(400)
+             .body("status", equalTo("invalid"));
+    }
 }

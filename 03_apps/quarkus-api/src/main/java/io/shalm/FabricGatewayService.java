@@ -1,7 +1,10 @@
 package io.shalm;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.grpc.ManagedChannel;
 import io.grpc.netty.shaded.io.grpc.netty.NettyChannelBuilder;
+import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -23,6 +26,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 @ApplicationScoped
@@ -33,14 +39,35 @@ public class FabricGatewayService {
     @ConfigProperty(name = "fabric.enabled", defaultValue = "false")
     boolean enabled;
 
-    @ConfigProperty(name = "fabric.peer.host", defaultValue = "peer0-org1.fabric.svc.cluster.local")
-    String peerHost;
+    @ConfigProperty(name = "fabric.org1.peer.host", defaultValue = "peer0-org1.fabric.svc.cluster.local")
+    String org1PeerHost;
 
-    @ConfigProperty(name = "fabric.peer.port", defaultValue = "7051")
-    int peerPort;
+    @ConfigProperty(name = "fabric.org1.peer.port", defaultValue = "7051")
+    int org1PeerPort;
 
-    @ConfigProperty(name = "fabric.msp.id", defaultValue = "Org1MSP")
-    String mspId;
+    @ConfigProperty(name = "fabric.org1.msp.id", defaultValue = "Org1MSP")
+    String org1MspId;
+
+    @ConfigProperty(name = "fabric.org1.cert.path", defaultValue = "/fabric-crypto/org1/admin-cert.pem")
+    String org1CertPath;
+
+    @ConfigProperty(name = "fabric.org1.key.path", defaultValue = "/fabric-crypto/org1/admin-key.pem")
+    String org1KeyPath;
+
+    @ConfigProperty(name = "fabric.org2.peer.host", defaultValue = "peer0-org2.fabric.svc.cluster.local")
+    String org2PeerHost;
+
+    @ConfigProperty(name = "fabric.org2.peer.port", defaultValue = "7051")
+    int org2PeerPort;
+
+    @ConfigProperty(name = "fabric.org2.msp.id", defaultValue = "Org2MSP")
+    String org2MspId;
+
+    @ConfigProperty(name = "fabric.org2.cert.path", defaultValue = "/fabric-crypto/org2/admin-cert.pem")
+    String org2CertPath;
+
+    @ConfigProperty(name = "fabric.org2.key.path", defaultValue = "/fabric-crypto/org2/admin-key.pem")
+    String org2KeyPath;
 
     @ConfigProperty(name = "fabric.channel", defaultValue = "mychannel")
     String channelName;
@@ -51,75 +78,73 @@ public class FabricGatewayService {
     @ConfigProperty(name = "fabric.health.account", defaultValue = "ACC-B1-001")
     String healthAccount;
 
-    @ConfigProperty(name = "fabric.cert.path", defaultValue = "/fabric-crypto/admin-cert.pem")
-    String certPath;
-
-    @ConfigProperty(name = "fabric.key.path", defaultValue = "/fabric-crypto/admin-key.pem")
-    String keyPath;
-
     @ConfigProperty(name = "fabric.chaincode.version", defaultValue = "unknown")
     String chaincodeVersion;
 
-    // The channel's default endorsement policy requires every org to endorse any
-    // state-changing invoke on this chaincode (confirmed by the CI integration test
-    // needing to explicitly address both org peers for InitLedger). Gateway SDK
-    // service discovery has been observed failing to derive this combination on its
-    // own ("no combination of peers can be derived which satisfy the endorsement
-    // policy"), so submissions name the endorsing orgs explicitly instead of relying
-    // on discovery.
     @ConfigProperty(name = "fabric.endorsing.orgs", defaultValue = "Org1MSP,Org2MSP")
     String endorsingOrgsCsv;
 
-    private Gateway gateway;
-    private ManagedChannel grpcChannel;
-    private Contract contract;
-    private Contract qsccContract;
-    private boolean available = false;
-
     @Inject
+    ObjectMapper objectMapper;
+
+    private final Map<String, OrganizationGateway> organizations = new LinkedHashMap<>();
+
+    @PostConstruct
     void init() {
         if (!enabled) {
             LOG.info("Fabric Gateway disabled — /fabric/* endpoints return 503");
             return;
         }
-        try {
-            connect();
-        } catch (Exception e) {
-            LOG.warnf("Fabric Gateway unavailable at startup: %s. /fabric/* endpoints return 503.", e.getMessage());
+
+        connectOrganization(org1MspId, org1PeerHost, org1PeerPort, org1CertPath, org1KeyPath);
+        connectOrganization(org2MspId, org2PeerHost, org2PeerPort, org2CertPath, org2KeyPath);
+
+        if (organizations.isEmpty()) {
+            LOG.warn("No Fabric organization gateway is available");
         }
     }
 
-    private void connect() throws Exception {
-        Reader certReader = Files.newBufferedReader(Path.of(certPath));
-        X509Certificate cert = Identities.readX509Certificate(certReader);
+    private void connectOrganization(String mspId, String peerHost, int peerPort,
+                                     String certPath, String keyPath) {
+        try {
+            Reader certReader = Files.newBufferedReader(Path.of(certPath));
+            X509Certificate cert = Identities.readX509Certificate(certReader);
 
-        Reader keyReader = Files.newBufferedReader(Path.of(keyPath));
-        PrivateKey privateKey = Identities.readPrivateKey(keyReader);
+            Reader keyReader = Files.newBufferedReader(Path.of(keyPath));
+            PrivateKey privateKey = Identities.readPrivateKey(keyReader);
 
-        grpcChannel = NettyChannelBuilder
-                .forAddress(peerHost, peerPort)
-                .usePlaintext()
-                .build();
+            ManagedChannel grpcChannel = NettyChannelBuilder
+                    .forAddress(peerHost, peerPort)
+                    .usePlaintext()
+                    .build();
 
-        gateway = Gateway.newInstance()
-                .identity(new X509Identity(mspId, cert))
-                .signer(Signers.newPrivateKeySigner(privateKey))
-                .connection(grpcChannel)
-                .evaluateOptions(o -> o.withDeadlineAfter(5, TimeUnit.SECONDS))
-                .endorseOptions(o -> o.withDeadlineAfter(15, TimeUnit.SECONDS))
-                .submitOptions(o -> o.withDeadlineAfter(5, TimeUnit.SECONDS))
-                .commitStatusOptions(o -> o.withDeadlineAfter(60, TimeUnit.SECONDS))
-                .connect();
+            Gateway gateway = Gateway.newInstance()
+                    .identity(new X509Identity(mspId, cert))
+                    .signer(Signers.newPrivateKeySigner(privateKey))
+                    .connection(grpcChannel)
+                    .evaluateOptions(o -> o.withDeadlineAfter(5, TimeUnit.SECONDS))
+                    .endorseOptions(o -> o.withDeadlineAfter(15, TimeUnit.SECONDS))
+                    .submitOptions(o -> o.withDeadlineAfter(5, TimeUnit.SECONDS))
+                    .commitStatusOptions(o -> o.withDeadlineAfter(60, TimeUnit.SECONDS))
+                    .connect();
 
-        Network network = gateway.getNetwork(channelName);
-        contract = network.getContract(chaincodeName);
-        qsccContract = network.getContract("qscc");
-        available = true;
-        LOG.infof("Fabric Gateway connected: %s:%d / %s / %s", peerHost, peerPort, channelName, chaincodeName);
+            Network network = gateway.getNetwork(channelName);
+            organizations.put(mspId, new OrganizationGateway(
+                    grpcChannel, gateway, network.getContract(chaincodeName), network.getContract("qscc")));
+            LOG.infof("Fabric Gateway connected for %s: %s:%d / %s / %s",
+                    mspId, peerHost, peerPort, channelName, chaincodeName);
+        } catch (Exception e) {
+            LOG.warnf("Fabric Gateway unavailable for %s at %s:%d: %s",
+                    mspId, peerHost, peerPort, e.getMessage());
+        }
     }
 
     public boolean isAvailable() {
-        return available;
+        return !organizations.isEmpty();
+    }
+
+    public boolean isOwnershipTransferAvailable() {
+        return organizations.containsKey(org1MspId) && organizations.containsKey(org2MspId);
     }
 
     public boolean isEnabled() {
@@ -139,43 +164,75 @@ public class FabricGatewayService {
     }
 
     public String getMspId() {
-        return mspId;
+        return org1MspId;
     }
 
     public String getPeerHost() {
-        return peerHost;
+        return org1PeerHost;
     }
 
     public int getPeerPort() {
-        return peerPort;
+        return org1PeerPort;
     }
 
     public int queryBalance(String accountId) throws Exception {
-        byte[] result = contract.evaluateTransaction("QueryBalance", accountId);
+        byte[] result = primary().contract.evaluateTransaction("QueryBalance", accountId);
         return Integer.parseInt(new String(result, StandardCharsets.UTF_8).trim());
     }
 
     public int checkHealth() throws Exception {
-        if (!available) {
+        if (!isAvailable()) {
             throw new IllegalStateException("Fabric Gateway is not connected");
         }
         return queryBalance(healthAccount);
     }
 
-    /**
-     * Queries the built-in qscc system chaincode on the same channel/connection — no
-     * chaincode redeploy required, since qscc is active on every channel by default.
-     */
     public byte[] evaluateQscc(String function, String... args) throws Exception {
-        if (!available) {
-            throw new IllegalStateException("Fabric Gateway is not connected");
-        }
-        return qsccContract.evaluateTransaction(function, args);
+        return primary().qsccContract.evaluateTransaction(function, args);
     }
 
     public FabricTransferResult transfer(String fromId, String toId, int amount) throws Exception {
-        Transaction tx = contract.newProposal("Transfer")
-                .addArguments(fromId, toId, String.valueOf(amount))
+        return submit(org1(), "Transfer", fromId, toId, String.valueOf(amount));
+    }
+
+    public List<OwnedAsset> listAssets() throws Exception {
+        byte[] result = primary().contract.evaluateTransaction("GetAllAssets");
+        return objectMapper.readValue(result, new TypeReference<List<OwnedAsset>>() {});
+    }
+
+    public OwnedAsset getAsset(String assetId) throws Exception {
+        return getAsset(primary(), assetId);
+    }
+
+    private OwnedAsset getAsset(OrganizationGateway organization, String assetId) throws Exception {
+        byte[] result = organization.contract.evaluateTransaction("ReadAsset", assetId);
+        return objectMapper.readValue(result, OwnedAsset.class);
+    }
+
+    public OwnershipTransferResponse transferAsset(String assetId, String newOwner,
+                                                    String newOwnerMsp) throws Exception {
+        if (!isOwnershipTransferAvailable()) {
+            throw new IllegalStateException("Both Org1MSP and Org2MSP gateway identities are required");
+        }
+
+        OwnedAsset current = getAsset(assetId);
+        OrganizationGateway ownerGateway = organizations.get(current.ownerMsp);
+        if (ownerGateway == null) {
+            throw new IllegalStateException("No gateway identity available for current owner " + current.ownerMsp);
+        }
+
+        FabricTransferResult result = submit(ownerGateway, "TransferAsset", assetId, newOwner, newOwnerMsp);
+        // Read from the submitting peer: getStatus() confirms its commit, while the
+        // other peer may still be applying the block for a few milliseconds.
+        OwnedAsset updated = getAsset(ownerGateway, assetId);
+        return new OwnershipTransferResponse(updated, result.transactionId, result.blockNumber,
+                result.validationCode, "committed", current.ownerMsp);
+    }
+
+    private FabricTransferResult submit(OrganizationGateway organization, String function,
+                                        String... args) throws Exception {
+        Transaction tx = organization.contract.newProposal(function)
+                .addArguments(args)
                 .setEndorsingOrganizations(endorsingOrgsCsv.split(","))
                 .build()
                 .endorse();
@@ -185,12 +242,50 @@ public class FabricGatewayService {
             throw new IllegalStateException("Fabric transaction failed validation: " + status.getCode());
         }
         return new FabricTransferResult(status.getTransactionId(), status.getBlockNumber(),
-                status.getCode().name(), status.isSuccessful());
+                status.getCode().name(), true);
+    }
+
+    private OrganizationGateway primary() {
+        OrganizationGateway primary = organizations.get(org1MspId);
+        if (primary != null) {
+            return primary;
+        }
+        return organizations.values().stream().findFirst()
+                .orElseThrow(() -> new IllegalStateException("Fabric Gateway is not connected"));
+    }
+
+    private OrganizationGateway org1() {
+        OrganizationGateway gateway = organizations.get(org1MspId);
+        if (gateway == null) {
+            throw new IllegalStateException("Org1MSP Fabric Gateway is not connected");
+        }
+        return gateway;
     }
 
     @PreDestroy
     void shutdown() throws InterruptedException {
-        if (gateway != null) gateway.close();
-        if (grpcChannel != null) grpcChannel.shutdownNow().awaitTermination(5, TimeUnit.SECONDS);
+        for (OrganizationGateway organization : organizations.values()) {
+            organization.gateway.close();
+            organization.grpcChannel.shutdownNow();
+        }
+        for (OrganizationGateway organization : organizations.values()) {
+            organization.grpcChannel.awaitTermination(5, TimeUnit.SECONDS);
+        }
+        organizations.clear();
+    }
+
+    private static final class OrganizationGateway {
+        private final ManagedChannel grpcChannel;
+        private final Gateway gateway;
+        private final Contract contract;
+        private final Contract qsccContract;
+
+        private OrganizationGateway(ManagedChannel grpcChannel, Gateway gateway,
+                                    Contract contract, Contract qsccContract) {
+            this.grpcChannel = grpcChannel;
+            this.gateway = gateway;
+            this.contract = contract;
+            this.qsccContract = qsccContract;
+        }
     }
 }

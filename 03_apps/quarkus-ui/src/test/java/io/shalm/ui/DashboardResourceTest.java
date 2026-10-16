@@ -51,6 +51,10 @@ class DashboardResourceTest {
         unavailableBlocks.blocks = List.of();
         when(apiClient.getBlocks(anyInt())).thenReturn(unavailableBlocks);
         when(apiClient.getBlock(anyLong())).thenThrow(new RuntimeException("not found"));
+
+        when(apiClient.getAssets()).thenReturn(List.of(
+                asset("ASSET-001", "Bank1 Treasury", "Org1MSP"),
+                asset("ASSET-002", "Bank2 Treasury", "Org2MSP")));
     }
 
     @Test
@@ -63,7 +67,7 @@ class DashboardResourceTest {
     }
 
     @Test
-    void index_rendersExactlyFiveTopLevelTabs() {
+    void index_rendersAssetOwnershipTab() {
         given()
           .when().get("/")
           .then()
@@ -71,9 +75,22 @@ class DashboardResourceTest {
              .body(containsString(">Dashboard<"))
              .body(containsString(">Accounts<"))
              .body(containsString(">Transfer<"))
+             .body(containsString(">Assets<"))
              .body(containsString(">Ledger<"))
              .body(containsString(">Operations<"))
              .body(org.hamcrest.Matchers.not(containsString("Manage Accounts")));
+    }
+
+    @Test
+    void assetsTabShowsBothOrganizationOwnedAssets() {
+        given()
+          .when().get("/")
+          .then()
+             .statusCode(200)
+             .body(containsString("ASSET-001"))
+             .body(containsString("Org1MSP"))
+             .body(containsString("ASSET-002"))
+             .body(containsString("Org2MSP"));
     }
 
     @Test
@@ -206,6 +223,29 @@ class DashboardResourceTest {
     }
 
     @Test
+    void ownershipTransferShowsSubmittingAndReceivingOrganizations() {
+        OwnershipTransferResponse response = new OwnershipTransferResponse();
+        response.asset = asset("ASSET-001", "Bank2 Trade Desk", "Org2MSP");
+        response.transactionId = "fabric-ownership-tx";
+        response.blockNumber = 42;
+        response.validationCode = "VALID";
+        response.status = "committed";
+        response.submittedByMsp = "Org1MSP";
+        when(apiClient.transferAsset(anyString(), any())).thenReturn(response);
+
+        given()
+          .contentType("application/x-www-form-urlencoded")
+          .formParam("assetId", "ASSET-001")
+          .formParam("newOwner", "Bank2 Trade Desk")
+          .formParam("newOwnerMsp", "Org2MSP")
+          .when().post("/assets/transfer")
+          .then()
+             .statusCode(200)
+             .body(containsString("transferred from Org1MSP to Org2MSP"))
+             .body(containsString("block #42"));
+    }
+
+    @Test
     void deleteAccount_success() {
         when(apiClient.deleteAccount(anyString())).thenReturn(Response.noContent().build());
 
@@ -234,5 +274,15 @@ class DashboardResourceTest {
         a.bank = bank;
         a.balance = balance;
         return a;
+    }
+
+    private static OwnedAsset asset(String id, String owner, String ownerMsp) {
+        OwnedAsset asset = new OwnedAsset();
+        asset.id = id;
+        asset.description = "Trade document";
+        asset.owner = owner;
+        asset.ownerMsp = ownerMsp;
+        asset.value = 25000;
+        return asset;
     }
 }

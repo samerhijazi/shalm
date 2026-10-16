@@ -57,4 +57,16 @@ public interface ApiClient {
     @Path("/consistency")
     @Produces(MediaType.APPLICATION_JSON)
     ConsistencyReport getConsistency();
+
+    @GET
+    @Path("/fabric/assets")
+    @Produces(MediaType.APPLICATION_JSON)
+    List<OwnedAsset> getAssets();
+
+    @POST
+    @Path("/fabric/assets/{id}/transfer")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    OwnershipTransferResponse transferAsset(@PathParam("id") String assetId,
+                                            OwnershipTransferRequest request);
 }

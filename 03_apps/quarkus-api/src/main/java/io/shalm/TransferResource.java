@@ -50,7 +50,8 @@ public class TransferResource {
         Timer.Sample sample = Timer.start(registry);
 
         try {
-            if (req == null || req.from == null || req.to == null || req.amount <= 0) {
+            if (req == null || req.from == null || req.to == null
+                    || req.from.equals(req.to) || req.amount <= 0) {
                 errorCount.increment();
                 log(txId, null, null, req == null ? 0 : req.amount, "invalid");
                 return Response.status(Response.Status.BAD_REQUEST)

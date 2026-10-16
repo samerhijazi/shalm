@@ -21,6 +21,12 @@ public class FabricReadinessCheck implements HealthCheck {
                     .withData("enabled", false)
                     .build();
         }
+        if (!fabric.isOwnershipTransferAvailable()) {
+            return HealthCheckResponse.named("fabric-ledger")
+                    .down()
+                    .withData("error", "Org1MSP and Org2MSP gateways are required")
+                    .build();
+        }
         try {
             int balance = fabric.checkHealth();
             return HealthCheckResponse.named("fabric-ledger")

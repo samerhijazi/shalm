@@ -1,0 +1,86 @@
+<div id="tab-assets" class="tab-content">
+    <div class="page-heading">
+        <h2>Asset Ownership</h2>
+        <p>Transfer unique Fabric assets between Org1MSP and Org2MSP. The current owner organization signs every transfer.</p>
+    </div>
+
+    <div class="card">
+        <h2>Fabric-owned assets</h2>
+        {#if assets.isEmpty()}
+        <p class="empty">No Fabric assets available. Check both organization gateway identities and initialize the upgraded chaincode.</p>
+        {#else}
+        <div class="table-wrap">
+            <table class="responsive-cards">
+                <thead>
+                    <tr><th>Asset</th><th>Description</th><th>Owner</th><th>Organization</th><th>Value</th><th>Last Fabric TX</th></tr>
+                </thead>
+                <tbody>
+                    {#for asset in assets}
+                    <tr>
+                        <td data-label="Asset" class="tx-id">{asset.id}</td>
+                        <td data-label="Description">{asset.description}</td>
+                        <td data-label="Owner">{asset.owner}</td>
+                        <td data-label="Organization"><span class="org-tag">{asset.ownerMsp}</span></td>
+                        <td data-label="Value"><strong>{asset.value} EUR</strong></td>
+                        <td data-label="Last Fabric TX" class="tx-id">{asset.lastTransferTxId ?: 'Initial owner'}</td>
+                    </tr>
+                    {/for}
+                </tbody>
+            </table>
+        </div>
+        {/if}
+    </div>
+
+    {#if !assets.isEmpty()}
+    <div class="card">
+        <h2>Transfer ownership across organizations</h2>
+        <p class="note">The API reads the current owner from Fabric, selects that organization's certificate, and requests endorsement from both Org1 and Org2.</p>
+        <form method="POST" action="/assets/transfer" onsubmit="return prepareAssetTransfer(this)">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="ownership-asset">Asset</label>
+                    <select id="ownership-asset" name="assetId" onchange="updateOwnershipTarget(this)">
+                        {#for asset in assets}
+                        <option value="{asset.id}" data-owner-msp="{asset.ownerMsp}">{asset.id} — {asset.owner} ({asset.ownerMsp})</option>
+                        {/for}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="ownership-new-owner">New owner</label>
+                    <input id="ownership-new-owner" type="text" name="newOwner" placeholder="Receiving organization desk" required>
+                </div>
+                <div class="form-group">
+                    <label for="ownership-target-msp">Target organization</label>
+                    <select id="ownership-target-msp" name="newOwnerMsp">
+                        <option value="Org1MSP">Org1MSP</option>
+                        <option value="Org2MSP">Org2MSP</option>
+                    </select>
+                    <span class="hint" id="ownership-direction"></span>
+                </div>
+                <button type="submit" class="btn btn-primary">Transfer Ownership</button>
+            </div>
+        </form>
+    </div>
+    {/if}
+</div>
+
+<script>
+    function updateOwnershipTarget(assetSelect) {
+        var option = assetSelect && assetSelect.options[assetSelect.selectedIndex];
+        var source = option ? option.dataset.ownerMsp : '';
+        var target = source === 'Org1MSP' ? 'Org2MSP' : 'Org1MSP';
+        var targetSelect = document.getElementById('ownership-target-msp');
+        if (targetSelect) targetSelect.value = target;
+        var direction = document.getElementById('ownership-direction');
+        if (direction) direction.textContent = source ? (source + ' → ' + target) : '';
+    }
+
+    function prepareAssetTransfer(form) {
+        updateOwnershipTarget(document.getElementById('ownership-asset'));
+        return disableSubmit(form);
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        updateOwnershipTarget(document.getElementById('ownership-asset'));
+    });
+</script>

@@ -21,8 +21,8 @@ spec:
           env:
             - name: QUARKUS_LOG_CONSOLE_JSON
               value: "true"
-            # Phase 4: set FABRIC_ENABLED=true after running create-secrets.sh
-            # and patching in the fabric-org1-admin secret volume below.
+            # Enable after create-secrets.sh has copied both organization
+            # identities into the quarkus-api namespace.
             - name: FABRIC_ENABLED
               value: "true"
             # Displayed on the Operations -> Network page. Keep in sync with
@@ -31,7 +31,7 @@ spec:
             # directly (ConfigMaps are namespace-scoped, same as the Fabric
             # identity secret, see CLAUDE.md Known Issues).
             - name: FABRIC_CHAINCODE_VERSION
-              value: "1.0"
+              value: "1.1"
           readinessProbe:
             httpGet:
               path: /health/ready
@@ -54,11 +54,16 @@ spec:
               cpu: 500m
               memory: 512Mi
           volumeMounts:
-            - name: fabric-crypto
-              mountPath: /fabric-crypto
+            - name: fabric-org1-crypto
+              mountPath: /fabric-crypto/org1
+              readOnly: true
+            - name: fabric-org2-crypto
+              mountPath: /fabric-crypto/org2
               readOnly: true
       volumes:
-        - name: fabric-crypto
+        - name: fabric-org1-crypto
           secret:
             secretName: fabric-org1-admin
-            optional: true
+        - name: fabric-org2-crypto
+          secret:
+            secretName: fabric-org2-admin

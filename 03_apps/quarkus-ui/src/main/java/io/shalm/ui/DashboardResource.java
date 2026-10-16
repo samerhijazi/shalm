@@ -162,6 +162,36 @@ public class DashboardResource {
                 "operations", "worldstate", "consistency")).build();
     }
 
+    @POST
+    @Path("/assets/transfer")
+    @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
+    @Produces(MediaType.TEXT_HTML)
+    public Response transferAsset(
+            @FormParam("assetId") String assetId,
+            @FormParam("newOwner") String newOwner,
+            @FormParam("newOwnerMsp") String newOwnerMsp) {
+
+        String message = "";
+        String error = "";
+        if (assetId == null || assetId.isBlank() || newOwner == null || newOwner.isBlank()
+                || !("Org1MSP".equals(newOwnerMsp) || "Org2MSP".equals(newOwnerMsp))) {
+            error = "Asset, new owner, and target organization are required.";
+        } else {
+            try {
+                OwnershipTransferResponse response = apiClient.transferAsset(
+                        assetId, new OwnershipTransferRequest(newOwner.trim(), newOwnerMsp));
+                message = "Asset " + response.asset.id + " transferred from "
+                        + response.submittedByMsp + " to " + response.asset.ownerMsp
+                        + " in Fabric block #" + response.blockNumber + ".";
+            } catch (Exception e) {
+                error = "Ownership transfer failed: " + e.getMessage();
+            }
+        }
+
+        return Response.ok(render(fetchAccounts(), message, error,
+                "assets", "worldstate", "network")).build();
+    }
+
     // ── helpers ───────────────────────────────────────────────────────────────
 
     private TemplateInstance render(List<AccountInfo> accounts, String message, String error,
@@ -175,6 +205,7 @@ public class DashboardResource {
         NetworkStatus networkStatus = fetchNetworkStatus();
         ConsistencyReport consistency = fetchConsistency();
         BlocksResponse blocksResponse = fetchBlocks();
+        List<OwnedAsset> assets = fetchAssets();
 
         long totalSupply = accounts.stream().mapToLong(a -> a.balance).sum();
         long orgCount = accounts.stream().map(a -> a.bank).distinct().count();
@@ -189,6 +220,7 @@ public class DashboardResource {
         return dashboard
                 .data("banks",              groupByBank(accounts))
                 .data("accounts",           accounts)
+                .data("assets",             assets)
                 .data("transactions",       txStore.getAll())
                 .data("recentTransactions", txStore.getRecent(5))
                 .data("message",            message)
@@ -206,6 +238,15 @@ public class DashboardResource {
                 .data("orgCount",           orgCount)
                 .data("txByAccount",        txByAccount)
                 .data("closeAccountWarning", closeAccountWarning);
+    }
+
+    private List<OwnedAsset> fetchAssets() {
+        try {
+            List<OwnedAsset> assets = apiClient.getAssets();
+            return assets == null ? List.of() : assets;
+        } catch (Exception e) {
+            return List.of();
+        }
     }
 
     private NetworkStatus fetchNetworkStatus() {

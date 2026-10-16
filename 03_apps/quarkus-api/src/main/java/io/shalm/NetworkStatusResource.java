@@ -38,7 +38,7 @@ public class NetworkStatusResource {
 
     @GET
     public NetworkStatus get() {
-        boolean available = fabric.isAvailable();
+        boolean available = fabric.isOwnershipTransferAvailable();
         Long latestBlock = null;
 
         if (available) {

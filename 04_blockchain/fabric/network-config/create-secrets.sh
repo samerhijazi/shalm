@@ -5,9 +5,11 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 NS=fabric
+API_NS=quarkus-api
 
-echo "==> Creating namespace..."
+echo "==> Creating namespaces..."
 kubectl create namespace "$NS" --dry-run=client -o yaml | kubectl apply -f -
+kubectl create namespace "$API_NS" --dry-run=client -o yaml | kubectl apply -f -
 
 # ── helpers ────────────────────────────────────────────────────────────────────
 
@@ -86,18 +88,26 @@ apply_secret "fabric-org1-admin" \
   --from-file=admin-cert.pem="$(ls "$ORG1_ADMIN/signcerts/"*.pem | head -1)" \
   --from-file=admin-key.pem="$ORG1_ADMIN/keystore/priv_sk"
 
-# quarkus-api (namespace "quarkus-api") mounts this same identity at
-# /fabric-crypto -- it must exist there too, not just in "$NS" (fabric),
-# since Secrets are namespace-scoped and can't be shared across namespaces.
+# quarkus-api mounts both organization identities. The Secrets must exist in
+# the API namespace too because Kubernetes Secrets are namespace-scoped.
 kubectl create secret generic fabric-org1-admin \
   --from-file=admin-cert.pem="$(ls "$ORG1_ADMIN/signcerts/"*.pem | head -1)" \
   --from-file=admin-key.pem="$ORG1_ADMIN/keystore/priv_sk" \
-  -n quarkus-api \
+  -n "$API_NS" \
   --dry-run=client -o yaml | kubectl apply -f -
 
 ORG2_ADMIN="$ORG2_BASE/users/Admin@org2.shalm.local/msp"
 apply_secret "fabric-org2-admin-msp" --from-file=config.yaml="$ORG2_ADMIN/config.yaml"
 create_msp_subdir_secrets "fabric-org2-admin-msp" "$ORG2_ADMIN"
+apply_secret "fabric-org2-admin" \
+  --from-file=admin-cert.pem="$(ls "$ORG2_ADMIN/signcerts/"*.pem | head -1)" \
+  --from-file=admin-key.pem="$ORG2_ADMIN/keystore/priv_sk"
+
+kubectl create secret generic fabric-org2-admin \
+  --from-file=admin-cert.pem="$(ls "$ORG2_ADMIN/signcerts/"*.pem | head -1)" \
+  --from-file=admin-key.pem="$ORG2_ADMIN/keystore/priv_sk" \
+  -n "$API_NS" \
+  --dry-run=client -o yaml | kubectl apply -f -
 
 # ── orderer org MSP (for clients to verify orderer) ──────────────────────────
 
@@ -114,7 +124,8 @@ apply_secret "fabric-artifacts" \
   --from-file="$SCRIPT_DIR/channel-artifacts/mychannel.tx"
 
 echo ""
-echo "All secrets created in namespace '$NS'."
+echo "Fabric secrets created in namespace '$NS'."
+echo "Org1 and Org2 gateway identities created in namespace '$API_NS'."
 echo "Now apply the fabric manifests:"
 echo "  kubectl apply -R -f 02_gitops/fabric/"
 echo "  (Or let ArgoCD sync if fabric-app.yaml is applied to argocd namespace)"
