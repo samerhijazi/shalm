@@ -80,6 +80,9 @@ mvn test
 # Fabric chaincode regression tests
 mvn -f 04_blockchain/fabric/chaincode/pom.xml test
 
+# Bruno black-box API tests against a running quarkus-api (env: cluster | local)
+cd 03_apps/quarkus-api/bruno && npx -y @usebruno/cli run -r --env cluster
+
 # Validate Fabric package ID or verify a live deployment
 ./04_blockchain/fabric/chaincode/validate-release.sh
 ./01_infrastructure/scripts/verify-fabric.sh
@@ -144,6 +147,7 @@ AI agent:      FastAPI (namespace: ai, port 30810) — GET /summary (Loki), GET 
 - Micrometer metrics: `transfer_request_count`, `transfer_request_latency`, `transfer_error_count`
 - Structured JSON logs with MDC fields: `transaction_id`, `from_account`, `to_account`, `amount`, `status`
 - Tests: `src/test/java/io/shalm/` — `AccountServiceTest` (unit) + `@QuarkusTest`/REST-assured resource tests; run in CI before every image build
+- Bruno collection: `03_apps/quarkus-api/bruno/` — 42 black-box requests / 50 tests over every endpoint (health, accounts, transfer, fabric, assets, blocks, network-status, consistency, tests, metrics). Mutations only touch throw-away `ACC-BRUNO-<runId>-A/B` accounts that are deleted in `99-cleanup`; Fabric endpoints accept 503 so the `local` env (FABRIC_ENABLED=false) also passes. Manual/on-demand only — not wired into CI.
 
 ### Quarkus UI (`03_apps/quarkus-ui/`, namespace `quarkus-ui`)
 

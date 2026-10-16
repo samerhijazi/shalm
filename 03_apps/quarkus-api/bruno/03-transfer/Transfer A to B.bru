@@ -1,0 +1,35 @@
+meta {
+  name: Transfer A to B
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/transfer
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "from": "{{accA}}",
+    "to": "{{accB}}",
+    "amount": 40
+  }
+}
+
+tests {
+  test("status 200 success", function () {
+    expect(res.getStatus()).to.equal(200);
+    const b = res.getBody();
+    expect(b.status).to.equal("success");
+    expect(b.message).to.equal("Transfer completed");
+    expect(b.transactionId).to.match(/^[0-9a-f-]{36}$/);
+  });
+  
+  test("fabric dual-write status is reported honestly", function () {
+    // Throw-away accounts are not on the ledger, so committed is not expected,
+    // but the in-memory transfer must succeed regardless (best-effort dual-write).
+    expect(res.getBody().fabricStatus).to.be.oneOf(["committed", "failed", "unavailable"]);
+  });
+}

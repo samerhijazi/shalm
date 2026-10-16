@@ -1,0 +1,17 @@
+meta {
+  name: Get asset unknown - 404
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{baseUrl}}/fabric/assets/ASSET-DOES-NOT-EXIST
+  body: none
+  auth: none
+}
+
+tests {
+  test("404 or 503", function () {
+    expect(res.getStatus()).to.be.oneOf([404, 503]);
+  });
+}

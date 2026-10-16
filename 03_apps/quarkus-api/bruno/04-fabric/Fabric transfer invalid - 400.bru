@@ -1,0 +1,30 @@
+meta {
+  name: Fabric transfer invalid - 400
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/fabric/transfer
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "from": "ACC-B1-001",
+    "to": "ACC-B2-001",
+    "amount": 0
+  }
+}
+
+docs {
+  Validation only — amount 0 is rejected before anything reaches the ledger.
+}
+
+tests {
+  test("400 (validation) or 503", function () {
+    expect(res.getStatus()).to.be.oneOf([400, 503]);
+    expect(res.getBody().error).to.be.a("string");
+  });
+}

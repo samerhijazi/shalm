@@ -1,0 +1,31 @@
+meta {
+  name: Asset transfer invalid MSP - 400
+  type: http
+  seq: 8
+}
+
+post {
+  url: {{baseUrl}}/fabric/assets/ASSET-001/transfer
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "newOwner": "Bruno",
+    "newOwnerMsp": "Org3MSP"
+  }
+}
+
+docs {
+  Validation only — an unknown MSP is rejected before anything reaches the ledger.
+}
+
+tests {
+  test("400 invalid or 503", function () {
+    expect(res.getStatus()).to.be.oneOf([400, 503]);
+    if (res.getStatus() === 400) {
+      expect(res.getBody().status).to.equal("invalid");
+    }
+  });
+}

@@ -1,0 +1,17 @@
+meta {
+  name: Verify deleted - 404
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/accounts/{{accB}}
+  body: none
+  auth: none
+}
+
+tests {
+  test("status 404", function () {
+    expect(res.getStatus()).to.equal(404);
+  });
+}

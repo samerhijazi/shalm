@@ -1,0 +1,35 @@
+meta {
+  name: List accounts
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/accounts
+  body: none
+  auth: none
+}
+
+tests {
+  test("status 200 and array", function () {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody()).to.be.an("array");
+  });
+  
+  test("contains the 4 seeded accounts", function () {
+    const ids = res.getBody().map(a => a.id);
+    expect(ids).to.include.members(["ACC-B1-001", "ACC-B1-002", "ACC-B2-001", "ACC-B2-002"]);
+  });
+  
+  test("sorted by id", function () {
+    const ids = res.getBody().map(a => a.id);
+    expect(ids).to.deep.equal([...ids].sort());
+  });
+  
+  test("every account has the expected shape", function () {
+    res.getBody().forEach(a => {
+      expect(a).to.include.keys("id", "owner", "bank", "balance", "updatedAt");
+      expect(a.balance).to.be.a("number").and.to.be.at.least(0);
+    });
+  });
+}

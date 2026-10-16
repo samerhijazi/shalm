@@ -1,0 +1,27 @@
+meta {
+  name: Create duplicate - 409
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{baseUrl}}/accounts
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "id": "{{accA}}",
+    "owner": "Duplicate",
+    "bank": "Bank1",
+    "initialBalance": 1
+  }
+}
+
+tests {
+  test("status 409 with error", function () {
+    expect(res.getStatus()).to.equal(409);
+    expect(res.getBody().error).to.be.a("string");
+  });
+}

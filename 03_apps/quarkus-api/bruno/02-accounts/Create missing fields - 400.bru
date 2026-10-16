@@ -1,0 +1,25 @@
+meta {
+  name: Create missing fields - 400
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{baseUrl}}/accounts
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "id": "ACC-BRUNO-INVALID",
+    "initialBalance": 10
+  }
+}
+
+tests {
+  test("status 400 with error", function () {
+    expect(res.getStatus()).to.equal(400);
+    expect(res.getBody().error).to.contain("required");
+  });
+}

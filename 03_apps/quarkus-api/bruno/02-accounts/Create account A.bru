@@ -1,0 +1,35 @@
+meta {
+  name: Create account A
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/accounts
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "id": "{{accA}}",
+    "owner": "Bruno Tester A",
+    "bank": "Bank1",
+    "initialBalance": 100
+  }
+}
+
+tests {
+  test("status 201", function () {
+    expect(res.getStatus()).to.equal(201);
+  });
+  
+  test("returns the created account", function () {
+    const a = res.getBody();
+    expect(a.id).to.equal(bru.getVar("accA"));
+    expect(a.owner).to.equal("Bruno Tester A");
+    expect(a.bank).to.equal("Bank1");
+    expect(a.balance).to.equal(100);
+    expect(a.updatedAt).to.be.a("string");
+  });
+}

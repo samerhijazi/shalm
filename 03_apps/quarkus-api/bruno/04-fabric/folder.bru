@@ -1,0 +1,9 @@
+meta {
+  name: 04-fabric
+  seq: 4
+}
+
+docs {
+  All Fabric endpoints return 503 when FABRIC_ENABLED=false or the gateway is
+  down; tests accept that and only check the body shape for the 200 case.
+}

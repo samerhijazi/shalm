@@ -1,0 +1,23 @@
+meta {
+  name: Consistency
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/consistency
+  body: none
+  auth: none
+}
+
+tests {
+  test("always 200 with report shape", function () {
+    expect(res.getStatus()).to.equal(200);
+    const r = res.getBody();
+    expect(r.entries).to.be.an("array");
+    expect(r.totalChecked).to.equal(r.entries.length);
+    // Only accounts Fabric actually answered for count as mismatches.
+    expect(r.mismatchCount).to.equal(r.entries.filter(e => e.fabricBalance != null && !e.match).length);
+    expect(r.fabricAvailable).to.be.a("boolean");
+  });
+}

@@ -1,0 +1,26 @@
+meta {
+  name: Get asset
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{baseUrl}}/fabric/assets/{{assetId}}
+  body: none
+  auth: none
+}
+
+script:pre-request {
+  if (!bru.getVar("assetId")) {
+    bru.setVar("assetId", "ASSET-001");
+  }
+}
+
+tests {
+  test("200 with matching id, or 503", function () {
+    expect(res.getStatus()).to.be.oneOf([200, 503]);
+    if (res.getStatus() === 200) {
+      expect(res.getBody().id).to.equal(bru.getVar("assetId"));
+    }
+  });
+}

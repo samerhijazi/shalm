@@ -1,0 +1,37 @@
+meta {
+  name: Blocks
+  type: http
+  seq: 9
+}
+
+get {
+  url: {{baseUrl}}/fabric/blocks?limit=3
+  body: none
+  auth: none
+}
+
+params:query {
+  limit: 3
+}
+
+script:post-response {
+  if (res.getStatus() === 200 && res.getBody().latestBlockNumber != null) {
+    bru.setVar("latestBlock", res.getBody().latestBlockNumber);
+  }
+}
+
+tests {
+  test("200 with at most 3 blocks newest first, or 503", function () {
+    expect(res.getStatus()).to.be.oneOf([200, 503]);
+    if (res.getStatus() === 200) {
+      const b = res.getBody();
+      expect(b.available).to.equal(true);
+      expect(b.blocks).to.be.an("array").with.length.at.most(3);
+      if (b.blocks.length > 0) {
+        expect(b.latestBlockNumber).to.equal(b.blocks[0].number);
+        const nums = b.blocks.map(x => x.number);
+        expect(nums).to.deep.equal([...nums].sort((x, y) => y - x));
+      }
+    }
+  });
+}

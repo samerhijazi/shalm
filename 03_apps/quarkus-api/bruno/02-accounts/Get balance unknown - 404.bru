@@ -1,0 +1,18 @@
+meta {
+  name: Get balance unknown - 404
+  type: http
+  seq: 10
+}
+
+get {
+  url: {{baseUrl}}/balance/ACC-DOES-NOT-EXIST
+  body: none
+  auth: none
+}
+
+tests {
+  test("status 404", function () {
+    expect(res.getStatus()).to.equal(404);
+    expect(res.getBody().error).to.contain("ACC-DOES-NOT-EXIST");
+  });
+}

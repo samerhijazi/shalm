@@ -1,0 +1,17 @@
+meta {
+  name: Delete account A
+  type: http
+  seq: 1
+}
+
+delete {
+  url: {{baseUrl}}/accounts/{{accA}}
+  body: none
+  auth: none
+}
+
+tests {
+  test("status 204", function () {
+    expect(res.getStatus()).to.equal(204);
+  });
+}

@@ -1,0 +1,28 @@
+meta {
+  name: Create account B
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/accounts
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "id": "{{accB}}",
+    "owner": "Bruno Tester B",
+    "bank": "Bank2",
+    "initialBalance": 0
+  }
+}
+
+tests {
+  test("status 201 with zero balance", function () {
+    expect(res.getStatus()).to.equal(201);
+    expect(res.getBody().id).to.equal(bru.getVar("accB"));
+    expect(res.getBody().balance).to.equal(0);
+  });
+}

@@ -1,0 +1,22 @@
+meta {
+  name: Fabric health
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/fabric/health
+  body: none
+  auth: none
+}
+
+tests {
+  test("200 ok or 503 down", function () {
+    expect(res.getStatus()).to.be.oneOf([200, 503]);
+    if (res.getStatus() === 200) {
+      expect(res.getBody()).to.deep.equal({ status: "ok", ledger: "fabric" });
+    } else {
+      expect(res.getBody().status).to.equal("down");
+    }
+  });
+}

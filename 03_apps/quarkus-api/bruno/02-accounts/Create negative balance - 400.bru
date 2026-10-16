@@ -1,0 +1,26 @@
+meta {
+  name: Create negative balance - 400
+  type: http
+  seq: 8
+}
+
+post {
+  url: {{baseUrl}}/accounts
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "id": "ACC-BRUNO-NEGATIVE",
+    "owner": "Negative",
+    "bank": "Bank1",
+    "initialBalance": -1
+  }
+}
+
+tests {
+  test("status 400", function () {
+    expect(res.getStatus()).to.equal(400);
+  });
+}

@@ -116,6 +116,9 @@ cd 03_apps/quarkus-api && mvn test
 cd 03_apps/quarkus-ui && mvn test
 cd 04_blockchain/fabric/chaincode && mvn test
 
+# Black-box API tests against a running quarkus-api (Bruno collection; env: cluster | local)
+cd 03_apps/quarkus-api/bruno && npx -y @usebruno/cli run -r --env cluster
+
 # Verify Fabric, the API, and the rendered Ledger > Blockchain tab after deployment
 ./01_infrastructure/scripts/verify-fabric.sh
 

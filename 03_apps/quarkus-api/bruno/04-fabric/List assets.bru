@@ -1,0 +1,30 @@
+meta {
+  name: List assets
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{baseUrl}}/fabric/assets
+  body: none
+  auth: none
+}
+
+script:post-response {
+  if (res.getStatus() === 200 && res.getBody().length > 0) {
+    bru.setVar("assetId", res.getBody()[0].id);
+  }
+}
+
+tests {
+  test("200 array of assets, or 503", function () {
+    expect(res.getStatus()).to.be.oneOf([200, 503]);
+    if (res.getStatus() === 200) {
+      expect(res.getBody()).to.be.an("array");
+      res.getBody().forEach(a => {
+        expect(a).to.include.keys("id", "description", "owner", "ownerMsp", "value");
+        expect(a.ownerMsp).to.be.oneOf(["Org1MSP", "Org2MSP"]);
+      });
+    }
+  });
+}

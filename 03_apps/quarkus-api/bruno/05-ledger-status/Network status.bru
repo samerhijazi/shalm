@@ -1,0 +1,25 @@
+meta {
+  name: Network status
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/fabric/network-status
+  body: none
+  auth: none
+}
+
+tests {
+  test("always 200, Fabric-down reported as data", function () {
+    expect(res.getStatus()).to.equal(200);
+    const s = res.getBody();
+    expect(s).to.include.keys("channel", "chaincodeName", "fabricEnabled", "fabricAvailable", "ordererAvailable", "apiHealth", "lastCheckedTimestamp");
+    expect(s.fabricAvailable).to.be.a("boolean");
+  });
+  
+  test("channel and chaincode", function () {
+    expect(res.getBody().channel).to.equal("mychannel");
+    expect(res.getBody().chaincodeName).to.equal("bank-transfer");
+  });
+}

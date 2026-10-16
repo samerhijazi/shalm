@@ -1,0 +1,20 @@
+meta {
+  name: Block genesis
+  type: http
+  seq: 10
+}
+
+get {
+  url: {{baseUrl}}/fabric/blocks/0
+  body: none
+  auth: none
+}
+
+tests {
+  test("200 block 0, or 503", function () {
+    expect(res.getStatus()).to.be.oneOf([200, 503]);
+    if (res.getStatus() === 200) {
+      expect(res.getBody().number).to.equal(0);
+    }
+  });
+}

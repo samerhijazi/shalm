@@ -1,0 +1,18 @@
+meta {
+  name: Fabric balance unknown - 404
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/fabric/balance/ACC-DOES-NOT-EXIST
+  body: none
+  auth: none
+}
+
+tests {
+  test("404 or 503", function () {
+    expect(res.getStatus()).to.be.oneOf([404, 503]);
+    expect(res.getBody().error).to.be.a("string");
+  });
+}

@@ -1,0 +1,21 @@
+meta {
+  name: Test results
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/tests
+  body: none
+  auth: none
+}
+
+tests {
+  test("200 array (CI-built image) or 404 (local build)", function () {
+    expect(res.getStatus()).to.be.oneOf([200, 404]);
+    if (res.getStatus() === 200) {
+      expect(res.getBody()).to.be.an("array");
+      res.getBody().forEach(r => expect(r).to.include.keys("app", "tests", "passed", "failures"));
+    }
+  });
+}

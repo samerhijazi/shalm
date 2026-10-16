@@ -1,0 +1,18 @@
+meta {
+  name: Get balance
+  type: http
+  seq: 9
+}
+
+get {
+  url: {{baseUrl}}/balance/{{accA}}
+  body: none
+  auth: none
+}
+
+tests {
+  test("status 200 with balance 100", function () {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody()).to.deep.equal({ id: bru.getVar("accA"), balance: 100 });
+  });
+}

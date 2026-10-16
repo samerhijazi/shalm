@@ -1,0 +1,24 @@
+meta {
+  name: Get seeded account
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/accounts/{{seedAccount}}
+  body: none
+  auth: none
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+  
+  test("ClientA at Bank1", function () {
+    const a = res.getBody();
+    expect(a.id).to.equal(bru.getEnvVar("seedAccount"));
+    expect(a.owner).to.equal("ClientA");
+    expect(a.bank).to.equal("Bank1");
+  });
+}

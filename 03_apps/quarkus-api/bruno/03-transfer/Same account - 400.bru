@@ -1,0 +1,26 @@
+meta {
+  name: Same account - 400
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/transfer
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "from": "{{accA}}",
+    "to": "{{accA}}",
+    "amount": 1
+  }
+}
+
+tests {
+  test("status 400 invalid", function () {
+    expect(res.getStatus()).to.equal(400);
+    expect(res.getBody().status).to.equal("invalid");
+  });
+}

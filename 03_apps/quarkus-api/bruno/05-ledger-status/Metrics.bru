@@ -1,0 +1,21 @@
+meta {
+  name: Metrics
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/metrics
+  body: none
+  auth: none
+}
+
+tests {
+  test("200 Prometheus text with transfer metrics", function () {
+    expect(res.getStatus()).to.equal(200);
+    const body = String(res.getBody());
+    expect(body).to.include("transfer_request_count");
+    expect(body).to.include("transfer_error_count");
+    expect(body).to.include("transfer_request_latency");
+  });
+}

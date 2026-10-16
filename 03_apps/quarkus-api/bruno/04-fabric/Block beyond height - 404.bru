@@ -1,0 +1,17 @@
+meta {
+  name: Block beyond height - 404
+  type: http
+  seq: 12
+}
+
+get {
+  url: {{baseUrl}}/fabric/blocks/999999999
+  body: none
+  auth: none
+}
+
+tests {
+  test("404 or 503", function () {
+    expect(res.getStatus()).to.be.oneOf([404, 503]);
+  });
+}

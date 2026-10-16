@@ -1,0 +1,21 @@
+docs {
+  # shalm quarkus-api — Bruno API tests
+  
+  Run in order (folders 01 → 99). Mutating tests only touch two throw-away
+  accounts (`ACC-BRUNO-<runId>-A/B`) created in 02-accounts and deleted in
+  99-cleanup, so the seeded accounts ACC-B1-001 … ACC-B2-002 stay untouched.
+  
+  Fabric endpoints accept 503 when Fabric is disabled/unavailable (e.g. local
+  `mvn quarkus:dev` with FABRIC_ENABLED=false). Nothing here submits a real
+  Fabric transaction except the best-effort dual-write of POST /transfer, which
+  fails harmlessly on Fabric because the throw-away accounts don't exist there.
+}
+
+script:pre-request {
+  // One id per collection run so repeated runs never collide (409).
+  if (!bru.getVar("runId")) {
+    bru.setVar("runId", Date.now().toString(36).toUpperCase());
+  }
+  bru.setVar("accA", "ACC-BRUNO-" + bru.getVar("runId") + "-A");
+  bru.setVar("accB", "ACC-BRUNO-" + bru.getVar("runId") + "-B");
+}

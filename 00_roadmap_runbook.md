@@ -52,6 +52,10 @@ This file was previously named `03_implementation-status.md`.
   use debug pods instead (rule 7)
 - `kubectl exec` does NOT work either (same cause) — read logs via Loki
   through Grafana's proxy (rule 10c)
+- **Bruno API tests (2026-10-17):** `03_apps/quarkus-api/bruno/` is a Bruno
+  collection (42 requests / 50 tests) covering every quarkus-api endpoint;
+  run with `npx -y @usebruno/cli run -r --env cluster` (or `--env local`).
+  Uses only throw-away accounts it deletes again; not part of CI yet.
 - quarkus-api and quarkus-ui both have real test suites (`mvn test`) run as a
   CI gate; results are summarized into a "Tests" tab in the quarkus-ui
   dashboard

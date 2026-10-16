@@ -1,0 +1,26 @@
+meta {
+  name: Unknown account - 422
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{baseUrl}}/transfer
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "from": "{{accA}}",
+    "to": "ACC-DOES-NOT-EXIST",
+    "amount": 1
+  }
+}
+
+tests {
+  test("status 422 failed", function () {
+    expect(res.getStatus()).to.equal(422);
+    expect(res.getBody().status).to.equal("failed");
+  });
+}
