@@ -1,6 +1,16 @@
 [
   {
     "app": "quarkus-ui",
+    "tests": 17,
+    "passed": 17,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "timestamp": "2026-10-16T20:37:26Z",
+    "commit": "da91bcb"
+  },
+  {
+    "app": "quarkus-ui",
     "tests": 15,
     "passed": 15,
     "failures": 0,
