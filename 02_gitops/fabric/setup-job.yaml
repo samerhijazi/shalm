@@ -183,58 +183,74 @@ spec:
               export CORE_PEER_MSPCONFIGPATH=/org2-admin-msp
               peer lifecycle chaincode install /tmp/bank-transfer.tar.gz 2>&1 || true
 
-              # ── approve from Org1 ─────────────────────────────────────────────
-              echo "==> Approving chaincode from Org1..."
+              # A CCAAS image update does not change the package ID because the
+              # package only contains the external service connection. Avoid
+              # re-approving an identical definition on every GitOps sync.
+              echo "==> Checking the committed chaincode definition..."
               export CORE_PEER_ADDRESS=peer0-org1.fabric.svc.cluster.local:7051
               export CORE_PEER_LOCALMSPID=Org1MSP
               export CORE_PEER_MSPCONFIGPATH=/org1-admin-msp
-              peer lifecycle chaincode approveformyorg \
-                --channelID mychannel \
-                --name "$CHAINCODE_NAME" \
-                --version "$CHAINCODE_VERSION" \
-                --sequence "$CHAINCODE_SEQUENCE" \
-                --package-id "$PACKAGE_ID" \
-                -o orderer.fabric.svc.cluster.local:7050 \
-                --tls=false 2>&1 || echo "Org1 approval may already exist"
+              COMMITTED_DEFINITION="$(
+                peer lifecycle chaincode querycommitted \
+                  --channelID mychannel \
+                  --name "$CHAINCODE_NAME" \
+                  --output json 2>/dev/null || true
+              )"
 
-              # ── approve from Org2 ─────────────────────────────────────────────
-              echo "==> Approving chaincode from Org2..."
-              export CORE_PEER_ADDRESS=peer0-org2.fabric.svc.cluster.local:7051
-              export CORE_PEER_LOCALMSPID=Org2MSP
-              export CORE_PEER_MSPCONFIGPATH=/org2-admin-msp
-              peer lifecycle chaincode approveformyorg \
-                --channelID mychannel \
-                --name "$CHAINCODE_NAME" \
-                --version "$CHAINCODE_VERSION" \
-                --sequence "$CHAINCODE_SEQUENCE" \
-                --package-id "$PACKAGE_ID" \
-                -o orderer.fabric.svc.cluster.local:7050 \
-                --tls=false 2>&1 || echo "Org2 approval may already exist"
+              if printf '%s\n' "$COMMITTED_DEFINITION" | grep -Fq "\"sequence\": $CHAINCODE_SEQUENCE," \
+                && printf '%s\n' "$COMMITTED_DEFINITION" | grep -Fq "\"version\": \"$CHAINCODE_VERSION\""; then
+                echo "==> Chaincode version $CHAINCODE_VERSION sequence $CHAINCODE_SEQUENCE is already committed; skipping approval and commit."
+              else
+                # ── approve from Org1 ───────────────────────────────────────────
+                echo "==> Approving chaincode from Org1..."
+                peer lifecycle chaincode approveformyorg \
+                  --channelID mychannel \
+                  --name "$CHAINCODE_NAME" \
+                  --version "$CHAINCODE_VERSION" \
+                  --sequence "$CHAINCODE_SEQUENCE" \
+                  --package-id "$PACKAGE_ID" \
+                  -o orderer.fabric.svc.cluster.local:7050 \
+                  --tls=false
 
-              # ── check commit readiness ────────────────────────────────────────
-              echo "==> Checking commit readiness..."
-              export CORE_PEER_ADDRESS=peer0-org1.fabric.svc.cluster.local:7051
-              export CORE_PEER_LOCALMSPID=Org1MSP
-              export CORE_PEER_MSPCONFIGPATH=/org1-admin-msp
-              peer lifecycle chaincode checkcommitreadiness \
-                --channelID mychannel \
-                --name "$CHAINCODE_NAME" \
-                --version "$CHAINCODE_VERSION" \
-                --sequence "$CHAINCODE_SEQUENCE" \
-                --tls=false \
-                --output json 2>&1 || echo "Sequence may already be committed, continuing..."
+                # ── approve from Org2 ───────────────────────────────────────────
+                echo "==> Approving chaincode from Org2..."
+                export CORE_PEER_ADDRESS=peer0-org2.fabric.svc.cluster.local:7051
+                export CORE_PEER_LOCALMSPID=Org2MSP
+                export CORE_PEER_MSPCONFIGPATH=/org2-admin-msp
+                peer lifecycle chaincode approveformyorg \
+                  --channelID mychannel \
+                  --name "$CHAINCODE_NAME" \
+                  --version "$CHAINCODE_VERSION" \
+                  --sequence "$CHAINCODE_SEQUENCE" \
+                  --package-id "$PACKAGE_ID" \
+                  -o orderer.fabric.svc.cluster.local:7050 \
+                  --tls=false
 
-              # ── commit chaincode ──────────────────────────────────────────────
-              echo "==> Committing chaincode definition..."
-              peer lifecycle chaincode commit \
-                --channelID mychannel \
-                --name "$CHAINCODE_NAME" \
-                --version "$CHAINCODE_VERSION" \
-                --sequence "$CHAINCODE_SEQUENCE" \
-                --peerAddresses peer0-org1.fabric.svc.cluster.local:7051 \
-                --peerAddresses peer0-org2.fabric.svc.cluster.local:7051 \
-                -o orderer.fabric.svc.cluster.local:7050 \
-                --tls=false 2>&1 || echo "Chaincode may already be committed"
+                # ── check commit readiness ──────────────────────────────────────
+                echo "==> Checking commit readiness..."
+                export CORE_PEER_ADDRESS=peer0-org1.fabric.svc.cluster.local:7051
+                export CORE_PEER_LOCALMSPID=Org1MSP
+                export CORE_PEER_MSPCONFIGPATH=/org1-admin-msp
+                peer lifecycle chaincode checkcommitreadiness \
+                  --channelID mychannel \
+                  --name "$CHAINCODE_NAME" \
+                  --version "$CHAINCODE_VERSION" \
+                  --sequence "$CHAINCODE_SEQUENCE" \
+                  --tls=false \
+                  --output json
+
+                # ── commit chaincode ────────────────────────────────────────────
+                echo "==> Committing chaincode definition..."
+                peer lifecycle chaincode commit \
+                  --channelID mychannel \
+                  --name "$CHAINCODE_NAME" \
+                  --version "$CHAINCODE_VERSION" \
+                  --sequence "$CHAINCODE_SEQUENCE" \
+                  --peerAddresses peer0-org1.fabric.svc.cluster.local:7051 \
+                  --peerAddresses peer0-org2.fabric.svc.cluster.local:7051 \
+                  -o orderer.fabric.svc.cluster.local:7050 \
+                  --tls=false
+              fi
 
               # ── InitLedger ────────────────────────────────────────────────────
               # Give the peer's lifecycle cache a moment to catch up with the
