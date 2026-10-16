@@ -5,9 +5,10 @@ metadata:
   namespace: fabric
 data:
   chaincode-name: "bank-transfer"
-  chaincode-version: "1.1"
-  chaincode-sequence: "5"
-  chaincode-label: "bank-transfer_1.1"
+  chaincode-version: "1.2"
+  chaincode-sequence: "6"
+  chaincode-label: "bank-transfer_1.2"
   chaincode-address: "fabric-chaincode.fabric.svc.cluster.local:9999"
+  chaincode-endorsement-policy: "OR('Org1MSP.peer','Org2MSP.peer')"
   # Full ID of the deterministic CCAAS package built in setup-job.yaml.
-  chaincode-id: "bank-transfer_1.1:31d074e1d39f03a0bae0de5f8344bb512894b342d1bb837a45b1a9936e918e29"
+  chaincode-id: "bank-transfer_1.2:b5eb1da6327b91321097e20dde777dec319a3ce1a1d054f1a5086afe9638412a"

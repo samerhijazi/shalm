@@ -75,7 +75,8 @@ jobs:
           ./network.sh up createChannel
           ./network.sh deployCCAAS \
             -ccn "$CHAINCODE_NAME" \
-            -ccp "$GITHUB_WORKSPACE/04_blockchain/fabric/chaincode"
+            -ccp "$GITHUB_WORKSPACE/04_blockchain/fabric/chaincode" \
+            -ccep "$CHAINCODE_ENDORSEMENT_POLICY"
 
           docker pull busybox:1.37.0 >/dev/null
 
@@ -170,8 +171,6 @@ jobs:
             -n "$CHAINCODE_NAME" \
             --peerAddresses localhost:7051 \
             --tlsRootCertFiles "$ORG1_TLS_ROOT" \
-            --peerAddresses localhost:9051 \
-            --tlsRootCertFiles "$ORG2_TLS_ROOT" \
             --waitForEvent \
             --waitForEventTimeout 30s \
             -c '{"function":"TransferAsset","Args":["ASSET-001","Org2 Integration Desk","Org2MSP"]}'
@@ -189,6 +188,17 @@ jobs:
           export CORE_PEER_MSPCONFIGPATH="$PWD/organizations/peerOrganizations/org2.example.com/users/Admin@org2.example.com/msp"
           export CORE_PEER_ADDRESS=localhost:9051
 
+          for attempt in 1 2 3 4 5 6; do
+            asset="$(peer chaincode query \
+              -C mychannel \
+              -n "$CHAINCODE_NAME" \
+              -c '{"function":"ReadAsset","Args":["ASSET-001"]}' 2>/dev/null || true)"
+            [ "$(printf '%s' "$asset" | jq -r '.ownerMsp // empty' 2>/dev/null)" = "Org2MSP" ] && break
+            echo "Org2 peer has not committed the ownership change yet (attempt $attempt); retrying..."
+            sleep 3
+          done
+          test "$(printf '%s' "$asset" | jq -r .ownerMsp)" = "Org2MSP"
+
           peer chaincode invoke \
             -o localhost:7050 \
             --ordererTLSHostnameOverride orderer.example.com \
@@ -196,8 +206,6 @@ jobs:
             --cafile "$ORDERER_TLS_ROOT" \
             -C mychannel \
             -n "$CHAINCODE_NAME" \
-            --peerAddresses localhost:7051 \
-            --tlsRootCertFiles "$ORG1_TLS_ROOT" \
             --peerAddresses localhost:9051 \
             --tlsRootCertFiles "$ORG2_TLS_ROOT" \
             --waitForEvent \

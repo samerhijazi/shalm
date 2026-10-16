@@ -39,6 +39,14 @@ This file was previously named `03_implementation-status.md`.
   worth it — Istio, Kiali (pure mesh-topology viewer, useless without Istio),
   and Jaeger (its only trace source was the Envoy sidecar; no app has its own
   OpenTelemetry instrumentation) were all removed. See Phase 5 below.
+- **Chaincode 1.2 — single-org endorsement (2026-10-17):** every Fabric
+  dual-write had been failing since ≥2026-09-15 because `peer0-org1`'s
+  Gateway can't open the cross-org connection to `peer0-org2` (missing mTLS
+  client cert). Chaincode 1.2 / sequence 6 (no code change) sets the
+  endorsement policy to `OR('Org1MSP.peer','Org2MSP.peer')`, and the API now
+  endorses only on the submitting org's own peer. Workaround, not the real
+  fix — proper peer mTLS remains open. Trade-off: one bank can endorse an
+  inter-bank transfer alone. `FABRIC_CHAINCODE_VERSION` bumped to `1.2`.
 - **Real orderer health check (2026-09-17):** Operations → Network's
   "Orderer" field was hardcoded to "Unknown". Fabric's orderer gRPC port
   (7050) only serves `AtomicBroadcast`/`Cluster` — no generic health RPC —

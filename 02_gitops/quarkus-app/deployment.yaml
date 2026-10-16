@@ -31,7 +31,7 @@ spec:
             # directly (ConfigMaps are namespace-scoped, same as the Fabric
             # identity secret, see CLAUDE.md Known Issues).
             - name: FABRIC_CHAINCODE_VERSION
-              value: "1.1"
+              value: "1.2"
           readinessProbe:
             httpGet:
               path: /health/ready

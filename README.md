@@ -133,7 +133,8 @@ limactl shell k8s-master
 ## Releasing Fabric Chaincode
 
 `04_blockchain/fabric/chaincode/release.env` is the source for the lifecycle
-name, version, sequence, label, and CCAAS address. For a behavior-changing
+name, version, sequence, label, CCAAS address, and endorsement policy
+(currently 1.2 / sequence 6 / `OR('Org1MSP.peer','Org2MSP.peer')`). For a behavior-changing
 chaincode release, increment the version and sequence, then render and validate
 the canonical Fabric package ID:
 
@@ -188,6 +189,8 @@ kubectl rollout restart daemonset/calico-node -n kube-system
 ```
 
 **Jakarta REST 3.0** — `Response.Status.UNPROCESSABLE_ENTITY` does not exist. Use `Response.status(422)`.
+
+**Fabric cross-org endorsement fails (peer mTLS client cert)** — worked around since chaincode 1.2: the endorsement policy is `OR(Org1, Org2)` and the API endorses only on the submitting org's own peer. Real peer mTLS is still open.
 
 ---
 

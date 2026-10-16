@@ -81,9 +81,6 @@ public class FabricGatewayService {
     @ConfigProperty(name = "fabric.chaincode.version", defaultValue = "unknown")
     String chaincodeVersion;
 
-    @ConfigProperty(name = "fabric.endorsing.orgs", defaultValue = "Org1MSP,Org2MSP")
-    String endorsingOrgsCsv;
-
     @Inject
     ObjectMapper objectMapper;
 
@@ -130,7 +127,7 @@ public class FabricGatewayService {
 
             Network network = gateway.getNetwork(channelName);
             organizations.put(mspId, new OrganizationGateway(
-                    grpcChannel, gateway, network.getContract(chaincodeName), network.getContract("qscc")));
+                    mspId, grpcChannel, gateway, network.getContract(chaincodeName), network.getContract("qscc")));
             LOG.infof("Fabric Gateway connected for %s: %s:%d / %s / %s",
                     mspId, peerHost, peerPort, channelName, chaincodeName);
         } catch (Exception e) {
@@ -233,7 +230,11 @@ public class FabricGatewayService {
                                         String... args) throws Exception {
         Transaction tx = organization.contract.newProposal(function)
                 .addArguments(args)
-                .setEndorsingOrganizations(endorsingOrgsCsv.split(","))
+                // Endorse only on the submitting org's own peer. The chaincode policy is
+                // OR('Org1MSP.peer','Org2MSP.peer') (04_blockchain/fabric/chaincode/release.env),
+                // so one org suffices and the gateway never needs a cross-org peer connection
+                // (that connection fails: peer has no mTLS client cert — see todo-list.md).
+                .setEndorsingOrganizations(organization.mspId)
                 .build()
                 .endorse();
         SubmittedTransaction submitted = tx.submitAsync();
@@ -275,13 +276,15 @@ public class FabricGatewayService {
     }
 
     private static final class OrganizationGateway {
+        private final String mspId;
         private final ManagedChannel grpcChannel;
         private final Gateway gateway;
         private final Contract contract;
         private final Contract qsccContract;
 
-        private OrganizationGateway(ManagedChannel grpcChannel, Gateway gateway,
+        private OrganizationGateway(String mspId, ManagedChannel grpcChannel, Gateway gateway,
                                     Contract contract, Contract qsccContract) {
+            this.mspId = mspId;
             this.grpcChannel = grpcChannel;
             this.gateway = gateway;
             this.contract = contract;

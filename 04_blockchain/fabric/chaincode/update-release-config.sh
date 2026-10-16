@@ -34,6 +34,7 @@ data:
   chaincode-sequence: "$CHAINCODE_SEQUENCE"
   chaincode-label: "$CHAINCODE_LABEL"
   chaincode-address: "$CHAINCODE_ADDRESS"
+  chaincode-endorsement-policy: "$CHAINCODE_ENDORSEMENT_POLICY"
   # Full ID of the deterministic CCAAS package built in setup-job.yaml.
   chaincode-id: "$package_id"
 EOF

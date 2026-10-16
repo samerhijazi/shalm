@@ -89,6 +89,11 @@ spec:
                 configMapKeyRef:
                   name: fabric-chaincode-config
                   key: chaincode-address
+            - name: CHAINCODE_ENDORSEMENT_POLICY
+              valueFrom:
+                configMapKeyRef:
+                  name: fabric-chaincode-config
+                  key: chaincode-endorsement-policy
             - name: EXPECTED_CHAINCODE_ID
               valueFrom:
                 configMapKeyRef:
@@ -209,6 +214,7 @@ spec:
                   --version "$CHAINCODE_VERSION" \
                   --sequence "$CHAINCODE_SEQUENCE" \
                   --package-id "$PACKAGE_ID" \
+                  --signature-policy "$CHAINCODE_ENDORSEMENT_POLICY" \
                   -o orderer.fabric.svc.cluster.local:7050 \
                   --tls=false
 
@@ -223,6 +229,7 @@ spec:
                   --version "$CHAINCODE_VERSION" \
                   --sequence "$CHAINCODE_SEQUENCE" \
                   --package-id "$PACKAGE_ID" \
+                  --signature-policy "$CHAINCODE_ENDORSEMENT_POLICY" \
                   -o orderer.fabric.svc.cluster.local:7050 \
                   --tls=false
 
@@ -236,6 +243,7 @@ spec:
                   --name "$CHAINCODE_NAME" \
                   --version "$CHAINCODE_VERSION" \
                   --sequence "$CHAINCODE_SEQUENCE" \
+                  --signature-policy "$CHAINCODE_ENDORSEMENT_POLICY" \
                   --tls=false \
                   --output json
 
@@ -246,6 +254,7 @@ spec:
                   --name "$CHAINCODE_NAME" \
                   --version "$CHAINCODE_VERSION" \
                   --sequence "$CHAINCODE_SEQUENCE" \
+                  --signature-policy "$CHAINCODE_ENDORSEMENT_POLICY" \
                   --peerAddresses peer0-org1.fabric.svc.cluster.local:7051 \
                   --peerAddresses peer0-org2.fabric.svc.cluster.local:7051 \
                   -o orderer.fabric.svc.cluster.local:7050 \
