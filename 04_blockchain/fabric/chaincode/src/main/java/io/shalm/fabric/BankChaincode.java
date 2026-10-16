@@ -1,6 +1,7 @@
 package io.shalm.fabric;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.hyperledger.fabric.protos.msp.SerializedIdentity;
 import org.hyperledger.fabric.shim.ChaincodeBase;
 import org.hyperledger.fabric.metrics.Metrics;
 import org.hyperledger.fabric.shim.ChaincodeStub;
@@ -185,7 +186,7 @@ public class BankChaincode extends ChaincodeBase {
 
         String key = assetKey(assetId);
         OwnedAsset asset = mapper.readValue(requireAssetRaw(stub, assetId), OwnedAsset.class);
-        String invokerMsp = stub.getMspId();
+        String invokerMsp = getInvokerMspId(stub);
         if (!asset.getOwnerMsp().equals(invokerMsp)) {
             throw new SecurityException("Only current owner MSP " + asset.getOwnerMsp()
                     + " may transfer asset " + assetId + "; invoker is " + invokerMsp);
@@ -243,6 +244,17 @@ public class BankChaincode extends ChaincodeBase {
         if (!ORG1_MSP.equals(mspId) && !ORG2_MSP.equals(mspId)) {
             throw new IllegalArgumentException("Target MSP must be Org1MSP or Org2MSP");
         }
+    }
+
+    private static String getInvokerMspId(ChaincodeStub stub) throws Exception {
+        // getMspId() reads CORE_PEER_LOCALMSPID from the chaincode process. It
+        // does not identify the client that signed the transaction proposal.
+        SerializedIdentity identity = SerializedIdentity.parseFrom(stub.getCreator());
+        String mspId = identity.getMspid();
+        if (mspId.isBlank()) {
+            throw new SecurityException("Invoker MSP identity is missing");
+        }
+        return mspId;
     }
 
     private boolean exists(ChaincodeStub stub, String id) {

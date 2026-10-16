@@ -1,5 +1,6 @@
 package io.shalm.fabric;
 
+import org.hyperledger.fabric.protos.msp.SerializedIdentity;
 import org.hyperledger.fabric.shim.Chaincode;
 import org.hyperledger.fabric.shim.ChaincodeStub;
 import org.junit.jupiter.api.Test;
@@ -165,8 +166,13 @@ class BankChaincodeTest {
                         case "putStringState":
                             state.put((String) args[0], (String) args[1]);
                             return null;
-                        case "getMspId":
-                            return mspId;
+                        case "getCreator":
+                            // Ownership authorization must use the proposal creator,
+                            // never the chaincode process's local MSP environment.
+                            return SerializedIdentity.newBuilder()
+                                    .setMspid(mspId)
+                                    .build()
+                                    .toByteArray();
                         case "getTxId":
                             return "tx-test-001";
                         case "setEvent":

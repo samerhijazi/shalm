@@ -13,6 +13,7 @@
         <maven.compiler.release>11</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <fabric.chaincode.version>2.5.0</fabric.chaincode.version>
+        <fabric.protos.version>0.2.0</fabric.protos.version>
         <jackson.version>2.17.1</jackson.version>
         <shade.plugin.version>3.5.1</shade.plugin.version>
         <junit.version>5.10.2</junit.version>
@@ -32,6 +33,11 @@
             <groupId>org.hyperledger.fabric-chaincode-java</groupId>
             <artifactId>fabric-chaincode-shim</artifactId>
             <version>${fabric.chaincode.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.hyperledger.fabric</groupId>
+            <artifactId>fabric-protos</artifactId>
+            <version>${fabric.protos.version}</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
