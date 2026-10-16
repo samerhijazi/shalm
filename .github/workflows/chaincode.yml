@@ -77,6 +77,37 @@ jobs:
             -ccn "$CHAINCODE_NAME" \
             -ccp "$GITHUB_WORKSPACE/04_blockchain/fabric/chaincode"
 
+          wait_for_ccaas() {
+            local container="$1"
+            local state=""
+            local logs=""
+
+            for attempt in $(seq 1 60); do
+              state="$(docker inspect --format '{{.State.Status}}' "$container" 2>/dev/null || true)"
+              logs="$(docker logs "$container" 2>&1 || true)"
+
+              if [ "$state" = "running" ] && grep -q "start grpc server" <<< "$logs"; then
+                echo "$container is ready"
+                return 0
+              fi
+              if [ "$state" = "exited" ] || [ "$state" = "dead" ]; then
+                echo "::error::$container stopped before becoming ready"
+                printf '%s\n' "$logs"
+                return 1
+              fi
+
+              echo "Waiting for $container (attempt $attempt/60)..."
+              sleep 1
+            done
+
+            echo "::error::Timed out waiting for $container"
+            printf '%s\n' "$logs"
+            return 1
+          }
+
+          wait_for_ccaas peer0org1_${CHAINCODE_NAME}_ccaas
+          wait_for_ccaas peer0org2_${CHAINCODE_NAME}_ccaas
+
           export CORE_PEER_TLS_ENABLED=true
           ORG1_TLS_ROOT="$PWD/organizations/peerOrganizations/org1.example.com/tlsca/tlsca.org1.example.com-cert.pem"
           ORG2_TLS_ROOT="$PWD/organizations/peerOrganizations/org2.example.com/tlsca/tlsca.org2.example.com-cert.pem"
