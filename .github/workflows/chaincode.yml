@@ -29,7 +29,7 @@ jobs:
     name: Unit and release checks
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4.2.2
+      - uses: actions/checkout@v6.0.2
 
       - name: Load versions
         run: grep -v '^#' versions.env | grep -v '^$' >> "$GITHUB_ENV"
